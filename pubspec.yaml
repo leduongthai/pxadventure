@@ -1,0 +1,47 @@
+name: pixel_adventure
+description: A Flutter/Flame 2D platformer game.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.2 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  flame: ^1.8.2
+  flame_tiled: ^1.11.0
+  flame_audio: ^2.0.5
+  shared_preferences: ^2.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/audio/
+    - assets/tiles/
+    - assets/images/Background/
+    - assets/images/Terrain/
+    - assets/images/HUD/
+    - assets/images/Traps/Saw/
+    - assets/images/Traps/Fire/
+    - assets/images/Traps/Falling Platforms/
+    - assets/images/Items/Checkpoints/Checkpoint/
+    - assets/images/Items/Fruits/
+    - assets/images/Main Characters/
+    - assets/images/Main Characters/Mask Dude/
+    - assets/images/Main Characters/Ninja Frog/
+    - assets/images/Main Characters/Pink Man/
+    - assets/images/Main Characters/Virtual Guy/
+    - assets/images/Enemies/Chicken/
+    - assets/images/Enemies/Bunny/
+    - assets/images/Enemies/BlueBird/
+    - assets/images/Enemies/Mushroom/
+    - assets/images/Menu/
+    - assets/images/Menu/Levels/
