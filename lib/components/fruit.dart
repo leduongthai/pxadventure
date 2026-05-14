@@ -4,11 +4,12 @@ import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame_audio/flame_audio.dart';
 import 'package:pixel_adventure/components/custom_hitbox.dart';
+import 'package:pixel_adventure/managers/achievement_manager.dart';
 import 'package:pixel_adventure/managers/score_manager.dart';
 import 'package:pixel_adventure/pixel_adventure.dart';
 
 class Fruit extends SpriteAnimationComponent
-    with HasGameRef<PixelAdventure>, CollisionCallbacks {
+    with HasGameReference<PixelAdventure>, CollisionCallbacks {
   final String fruit;
   Fruit({
     this.fruit = 'Apple',
@@ -40,8 +41,9 @@ class Fruit extends SpriteAnimationComponent
       collected = true;
       if (game.playSounds) FlameAudio.play('collect_fruit.wav', volume: game.soundVolume);
 
-      // Update score
+      // Update score + achievements
       ScoreManager.instance.addFruitScore(fruit);
+      AchievementManager.instance.recordFruitCollected();
 
       animation = SpriteAnimation.fromFrameData(
         game.images.fromCache('Items/Fruits/Collected.png'),

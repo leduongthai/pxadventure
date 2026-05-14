@@ -7,7 +7,7 @@ import 'package:pixel_adventure/pixel_adventure.dart';
 enum _FireState { on, hit }
 
 class Fire extends SpriteAnimationGroupComponent
-    with HasGameRef<PixelAdventure>, CollisionCallbacks {
+    with HasGameReference<PixelAdventure>, CollisionCallbacks {
   Fire({super.position, super.size});
 
   static const stepTime = 0.1;

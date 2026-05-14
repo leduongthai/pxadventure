@@ -11,6 +11,10 @@ class LevelCompleteWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final score = ScoreManager.instance.currentScore;
     final fruits = ScoreManager.instance.totalFruitCollected;
+    final totalFruits = ScoreManager.instance.totalFruitsInLevel;
+    final deaths = ScoreManager.instance.deathCount;
+    final stars = ScoreManager.instance.calculateStars();
+    final isLastLevel = game.isLastLevel;
 
     return Center(
       child: Container(
@@ -32,25 +36,44 @@ class LevelCompleteWidget extends StatelessWidget {
             const SizedBox(height: 16),
             Text('Điểm: $score', style: const TextStyle(color: Colors.white, fontSize: 20)),
             const SizedBox(height: 4),
-            Text('Trái cây: $fruits 🍎', style: const TextStyle(color: Colors.white70, fontSize: 16)),
+            Text('Trái cây: $fruits/$totalFruits 🍎', style: const TextStyle(color: Colors.white70, fontSize: 16)),
+            const SizedBox(height: 4),
+            Text('Số lần chết: $deaths', style: const TextStyle(color: Colors.white70, fontSize: 16)),
+            const SizedBox(height: 12),
+            Text(
+              '★' * stars + '☆' * (3 - stars),
+              style: const TextStyle(color: Color(0xFFFFD700), fontSize: 26, letterSpacing: 2),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              '1★ qua màn • 2★ thu 50% trái cây • 3★ thu đủ và không chết',
+              style: TextStyle(color: Colors.white54, fontSize: 11),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 24),
             _Btn(
-              label: 'LEVEL TIẾP',
+              label: isLastLevel ? 'VỀ MENU' : 'LEVEL TIẾP',
               color: const Color(0xFF5B4EC8),
               onTap: () {
                 game.overlays.remove('LevelComplete');
-                game.loadNextLevel();
+                if (isLastLevel) {
+                  Navigator.of(context).pushNamedAndRemoveUntil('/', (r) => false);
+                } else {
+                  game.continueToNextLevel();
+                }
               },
             ),
-            const SizedBox(height: 12),
-            _Btn(
-              label: 'VỀ MENU',
-              color: Colors.grey.shade700,
-              onTap: () {
-                game.overlays.remove('LevelComplete');
-                Navigator.of(context).pushNamedAndRemoveUntil('/', (r) => false);
-              },
-            ),
+            if (!isLastLevel) ...[
+              const SizedBox(height: 12),
+              _Btn(
+                label: 'VỀ MENU',
+                color: Colors.grey.shade700,
+                onTap: () {
+                  game.overlays.remove('LevelComplete');
+                  Navigator.of(context).pushNamedAndRemoveUntil('/', (r) => false);
+                },
+              ),
+            ],
           ],
         ),
       ),

@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
-import 'package:pixel_adventure/components/player.dart';
+import 'package:flame_audio/flame_audio.dart';
 import 'package:pixel_adventure/pixel_adventure.dart';
 
 enum _BlueBirdState { flying, hit }
 
 class BlueBird extends SpriteAnimationGroupComponent
-    with HasGameRef<PixelAdventure>, CollisionCallbacks {
+    with HasGameReference<PixelAdventure>, CollisionCallbacks {
   final double offNeg;
   final double offPos;
 
@@ -22,6 +22,7 @@ class BlueBird extends SpriteAnimationGroupComponent
   static const stepTime = 0.05;
   static const tileSize = 16;
   static const moveSpeed = 60.0;
+  static const _bounceHeight = 260.0;
   final textureSize = Vector2(32, 32);
 
   double moveDirection = 1;
@@ -73,8 +74,24 @@ class BlueBird extends SpriteAnimationGroupComponent
     position.x += moveDirection * moveSpeed * dt;
   }
 
-  void collidedWithPlayer() {
-    // BlueBird cannot be stomped — always damages player
-    game.player.collidedwithEnemy();
+  void collidedWithPlayer() async {
+    final player = game.player;
+    final playerCenterY = player.y + player.height / 2;
+    final birdCenterY = position.y + height / 2;
+    final stompedFromAbove = player.velocity.y > 0 && playerCenterY < birdCenterY;
+
+    if (stompedFromAbove) {
+      if (game.playSounds) {
+        FlameAudio.play('bounce.wav', volume: game.soundVolume);
+      }
+      gotHit = true;
+      current = _BlueBirdState.hit;
+      player.bounceFromEnemy(_bounceHeight);
+      game.scoreManager.addEnemyKillScore();
+      await animationTicker?.completed;
+      removeFromParent();
+    } else {
+      player.collidedwithEnemy();
+    }
   }
 }

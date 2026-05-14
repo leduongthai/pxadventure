@@ -4,8 +4,7 @@ import 'package:flame/components.dart';
 import 'package:flame/parallax.dart';
 import 'package:flutter/material.dart';
 
-// Thêm mixin "with HasGameRef" ở đây
-class BackgroundTile extends ParallaxComponent with HasGameRef {
+class BackgroundTile extends ParallaxComponent {
   final String color;
   BackgroundTile({
     this.color = 'Gray',
@@ -21,8 +20,7 @@ class BackgroundTile extends ParallaxComponent with HasGameRef {
     priority = -10;
     size = Vector2.all(64);
 
-    // Bây giờ gameRef đã được xác định và bạn có thể sử dụng nó
-    parallax = await gameRef.loadParallax(
+    parallax = await game.loadParallax(
       [ParallaxImageData('Background/$color.png')],
       baseVelocity: Vector2(0, -scrollSpeed),
       repeat: ImageRepeat.repeat,

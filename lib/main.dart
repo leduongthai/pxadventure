@@ -1,11 +1,14 @@
 import 'package:flame/flame.dart';
 import 'package:flutter/material.dart';
+import 'package:pixel_adventure/managers/achievement_manager.dart';
 import 'package:pixel_adventure/managers/save_manager.dart';
+import 'package:pixel_adventure/screens/achievements_screen.dart';
 import 'package:pixel_adventure/screens/character_select_screen.dart';
 import 'package:pixel_adventure/screens/game_screen.dart';
 import 'package:pixel_adventure/screens/leaderboard_screen.dart';
 import 'package:pixel_adventure/screens/level_select_screen.dart';
 import 'package:pixel_adventure/screens/main_menu_screen.dart';
+import 'package:pixel_adventure/screens/player_name_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,6 +16,8 @@ void main() async {
   await Flame.device.setLandscape();
 
   await SaveManager.instance.init();
+  await AchievementManager.instance.init();
+  await AchievementManager.instance.loadLifetimeStats();
 
   runApp(const PixelAdventureApp());
 }
@@ -43,6 +48,10 @@ class PixelAdventureApp extends StatelessWidget {
             );
           case '/leaderboard':
             return MaterialPageRoute(builder: (_) => const LeaderboardScreen());
+          case '/achievements':
+            return MaterialPageRoute(builder: (_) => const AchievementsScreen());
+          case '/name':
+            return MaterialPageRoute(builder: (_) => const PlayerNameScreen());
           default:
             return MaterialPageRoute(builder: (_) => const MainMenuScreen());
         }
@@ -50,3 +59,4 @@ class PixelAdventureApp extends StatelessWidget {
     );
   }
 }
+

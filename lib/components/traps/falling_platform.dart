@@ -2,13 +2,16 @@ import 'dart:async';
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:pixel_adventure/components/collision_block.dart';
 import 'package:pixel_adventure/pixel_adventure.dart';
 
 enum _FPState { on, off }
 
 class FallingPlatform extends SpriteAnimationGroupComponent
-    with HasGameRef<PixelAdventure>, CollisionCallbacks {
-  FallingPlatform({super.position, super.size});
+    with HasGameReference<PixelAdventure>, CollisionCallbacks {
+  final CollisionBlock? collisionBlock;
+
+  FallingPlatform({super.position, super.size, this.collisionBlock});
 
   static const stepTime = 0.1;
   final textureSize = Vector2(32, 10);
@@ -68,10 +71,11 @@ class FallingPlatform extends SpriteAnimationGroupComponent
     final playerBottom = player.y + player.height;
     final platformTop = position.y;
 
-    final playerOnTop = (playerBottom >= platformTop - 4 &&
-        playerBottom <= platformTop + 8 &&
-        player.x + player.width > position.x &&
-        player.x < position.x + size.x &&
+    final playerCenterX = player.x + player.width / 2;
+    final playerOnTop = (playerBottom >= platformTop - 2 &&
+        playerBottom <= platformTop + 6 &&
+        playerCenterX >= position.x + 4 &&
+        playerCenterX <= position.x + size.x - 4 &&
         player.velocity.y >= 0);
 
     if (playerOnTop && !_triggered && !_isFalling) {
@@ -83,6 +87,7 @@ class FallingPlatform extends SpriteAnimationGroupComponent
       _shakeTimer += dt;
       // Shake effect
       position.x = _originalPosition.x + ((_shakeTimer * 20).floor() % 2 == 0 ? 1.5 : -1.5);
+      collisionBlock?.position = position;
 
       if (_shakeTimer >= 0.5) {
         _fallTimer += dt;
@@ -92,12 +97,14 @@ class FallingPlatform extends SpriteAnimationGroupComponent
         _triggered = false;
         current = _FPState.off;
         _hitbox.collisionType = CollisionType.inactive;
+        collisionBlock?.isActive = false;
       }
     }
 
     if (_isFalling) {
       _fallVelocity += 200 * dt;
       position.y += _fallVelocity * dt;
+      collisionBlock?.position = position;
 
       if (position.y > 800) {
         _startRespawn();
@@ -118,6 +125,8 @@ class FallingPlatform extends SpriteAnimationGroupComponent
     Future.delayed(const Duration(seconds: 3), () {
       if (!isMounted) return;
       position = _originalPosition.clone();
+      collisionBlock?.position = _originalPosition.clone();
+      collisionBlock?.isActive = true;
       current = _FPState.on;
       _hitbox.collisionType = CollisionType.passive;
       _isRespawning = false;

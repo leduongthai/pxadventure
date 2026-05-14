@@ -6,7 +6,7 @@ import 'package:pixel_adventure/components/player.dart';
 import 'package:pixel_adventure/pixel_adventure.dart';
 
 class Checkpoint extends SpriteAnimationComponent
-    with HasGameRef<PixelAdventure>, CollisionCallbacks {
+    with HasGameReference<PixelAdventure>, CollisionCallbacks {
   Checkpoint({
     position,
     size,
@@ -19,8 +19,8 @@ class Checkpoint extends SpriteAnimationComponent
   FutureOr<void> onLoad() {
     // debugMode = true;
     add(RectangleHitbox(
-      position: Vector2(18, 56),
-      size: Vector2(12, 8),
+      position: Vector2(12, 20),
+      size: Vector2(40, 44),
       collisionType: CollisionType.passive,
     ));
 

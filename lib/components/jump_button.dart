@@ -5,7 +5,7 @@ import 'package:flame/events.dart';
 import 'package:pixel_adventure/pixel_adventure.dart';
 
 class JumpButton extends SpriteComponent
-    with HasGameRef<PixelAdventure>, TapCallbacks {
+    with HasGameReference<PixelAdventure>, TapCallbacks {
   JumpButton();
 
   // Margin 64 so Android nav bar doesn't cover it
@@ -27,12 +27,13 @@ class JumpButton extends SpriteComponent
 
   @override
   void onTapDown(TapDownEvent event) {
-    game.player.hasJumped = true;
+    game.player.requestJump();
     super.onTapDown(event);
   }
 
   @override
   void onTapUp(TapUpEvent event) {
     game.player.hasJumped = false;
-    super.onTapUp(event);}
+    super.onTapUp(event);
+  }
 }

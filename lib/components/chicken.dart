@@ -10,7 +10,7 @@ import 'package:pixel_adventure/pixel_adventure.dart';
 enum State { idle, run, hit }
 
 class Chicken extends SpriteAnimationGroupComponent
-    with HasGameRef<PixelAdventure>, CollisionCallbacks {
+    with HasGameReference<PixelAdventure>, CollisionCallbacks {
   final double offNeg;
   final double offPos;
   Chicken({super.position, super.size, this.offNeg = 0, this.offPos = 0});

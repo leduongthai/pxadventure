@@ -4,6 +4,7 @@ class SaveManager {
   SaveManager._internal();
   static final SaveManager instance = SaveManager._internal();
 
+  static const int maxLevels = 11;
   static const _keyPlayerName = 'player_name';
   static const _keySelectedCharacter = 'selected_character';
   static const _keyUnlockedLevels = 'unlocked_levels';
@@ -19,7 +20,7 @@ class SaveManager {
     final prefs = await SharedPreferences.getInstance();
     _playerName = prefs.getString(_keyPlayerName) ?? 'Player';
     _selectedCharacter = prefs.getString(_keySelectedCharacter) ?? 'Mask Dude';
-    _unlockedLevels = prefs.getInt(_keyUnlockedLevels) ?? 1;
+    _unlockedLevels = (prefs.getInt(_keyUnlockedLevels) ?? 1).clamp(1, maxLevels);
     _soundEnabled = prefs.getBool(_keySoundEnabled) ?? true;
   }
 
@@ -40,7 +41,7 @@ class SaveManager {
   int getUnlockedLevels() => _unlockedLevels;
   Future<void> unlockNextLevel(int currentLevel) async {
     if (currentLevel >= _unlockedLevels) {
-      _unlockedLevels = currentLevel + 1;
+      _unlockedLevels = (currentLevel + 1).clamp(1, maxLevels);
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_keyUnlockedLevels, _unlockedLevels);
     }

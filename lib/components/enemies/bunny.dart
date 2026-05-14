@@ -10,7 +10,7 @@ import 'package:pixel_adventure/pixel_adventure.dart';
 enum _BunnyState { idle, run, jump, hit }
 
 class Bunny extends SpriteAnimationGroupComponent
-    with HasGameRef<PixelAdventure>, CollisionCallbacks {
+    with HasGameReference<PixelAdventure>, CollisionCallbacks {
   final double offNeg;
   final double offPos;
 
@@ -34,6 +34,7 @@ class Bunny extends SpriteAnimationGroupComponent
   double rangePos = 0;
   double moveDirection = 1;
   double targetDirection = -1;
+  double _groundY = 0;
   bool gotStomped = false;
   bool _isJumping = false;
   bool _isOnGround = true;
@@ -45,6 +46,7 @@ class Bunny extends SpriteAnimationGroupComponent
   @override
   FutureOr<void> onLoad() {
     player = game.player;
+    _groundY = position.y;
     add(RectangleHitbox(position: Vector2(5, 6), size: Vector2(24, 36)));
     _loadAnimations();
     _calculateRange();
@@ -93,7 +95,12 @@ class Bunny extends SpriteAnimationGroupComponent
       velocity.y += _gravity;
       velocity.y = velocity.y.clamp(-_jumpSpeed.abs() * 1.5, _terminalVelocity);
       position.y += velocity.y * dt;
-      if (position.y > game.size.y + 100) removeFromParent();
+      if (position.y > _groundY + 96) {
+        position.y = _groundY;
+        velocity.y = 0;
+        _isOnGround = true;
+        _isJumping = false;
+      }
     }
   }
 
@@ -126,6 +133,7 @@ class Bunny extends SpriteAnimationGroupComponent
 
     Future.delayed(const Duration(milliseconds: 600), () {
       if (!gotStomped) {
+        position.y = _groundY;
         _isOnGround = true;
         _isJumping = false;
         velocity.y = 0;

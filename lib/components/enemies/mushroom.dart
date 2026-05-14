@@ -9,7 +9,7 @@ import 'package:pixel_adventure/pixel_adventure.dart';
 enum _MushroomState { idle, run, hit }
 
 class Mushroom extends SpriteAnimationGroupComponent
-    with HasGameRef<PixelAdventure>, CollisionCallbacks {
+    with HasGameReference<PixelAdventure>, CollisionCallbacks {
   final double offNeg;
   final double offPos;
 

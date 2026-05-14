@@ -15,13 +15,23 @@ import 'package:pixel_adventure/components/fruit.dart';
 import 'package:pixel_adventure/components/saw.dart';
 import 'package:pixel_adventure/components/traps/fire.dart';
 import 'package:pixel_adventure/components/utils.dart';
+import 'package:pixel_adventure/managers/achievement_manager.dart';
 import 'package:pixel_adventure/managers/score_manager.dart';
 import 'package:pixel_adventure/pixel_adventure.dart';
 
-enum PlayerState { idle, running, jumping, falling, hit, appearing, disappearing }
+enum PlayerState {
+  idle,
+  running,
+  jumping,
+  doubleJumping,
+  falling,
+  hit,
+  appearing,
+  disappearing,
+}
 
 class Player extends SpriteAnimationGroupComponent
-    with HasGameRef<PixelAdventure>, KeyboardHandler, CollisionCallbacks {
+    with HasGameReference<PixelAdventure>, KeyboardHandler, CollisionCallbacks {
   String character;
   Player({position, this.character = 'Ninja Frog'}) : super(position: position);
 
@@ -29,6 +39,7 @@ class Player extends SpriteAnimationGroupComponent
   late final SpriteAnimation idleAnimation;
   late final SpriteAnimation runningAnimation;
   late final SpriteAnimation jumpingAnimation;
+  late final SpriteAnimation doubleJumpingAnimation;
   late final SpriteAnimation fallingAnimation;
   late final SpriteAnimation hitAnimation;
   late final SpriteAnimation appearingAnimation;
@@ -43,6 +54,9 @@ class Player extends SpriteAnimationGroupComponent
   Vector2 velocity = Vector2.zero();
   bool isOnGround = false;
   bool hasJumped = false;
+  bool _jumpInputHeld = false;
+  int jumpCount = 0;
+  final int maxJumpCount = 2;
   bool gotHit = false;
   bool reachedCheckpoint = false;
   List<CollisionBlock> collisionBlocks = [];
@@ -71,6 +85,7 @@ class Player extends SpriteAnimationGroupComponent
         _checkHorizontalCollisions();
         _applyGravity(fixedDeltaTime);
         _checkVerticalCollisions();
+        _checkFallOutOfMap();
       }
       accumulatedTime -= fixedDeltaTime;
     }
@@ -90,7 +105,15 @@ class Player extends SpriteAnimationGroupComponent
     horizontalMovement += isLeftKeyPressed ? -1 : 0;
     horizontalMovement += isRightKeyPressed ? 1 : 0;
 
-    hasJumped = keysPressed.contains(LogicalKeyboardKey.space);
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.space &&
+        !_jumpInputHeld) {
+      _jumpInputHeld = true;
+      requestJump();
+    } else if (event is KeyUpEvent &&
+        event.logicalKey == LogicalKeyboardKey.space) {
+      _jumpInputHeld = false;
+    }
 
     return super.onKeyEvent(event, keysPressed);
   }
@@ -114,6 +137,7 @@ class Player extends SpriteAnimationGroupComponent
     idleAnimation = _spriteAnimation('Idle', 11);
     runningAnimation = _spriteAnimation('Run', 12);
     jumpingAnimation = _spriteAnimation('Jump', 1);
+    doubleJumpingAnimation = _spriteAnimation('Double Jump', 6);
     fallingAnimation = _spriteAnimation('Fall', 1);
     hitAnimation = _spriteAnimation('Hit', 7)..loop = false;
     appearingAnimation = _specialSpriteAnimation('Appearing', 7);
@@ -123,6 +147,7 @@ class Player extends SpriteAnimationGroupComponent
       PlayerState.idle: idleAnimation,
       PlayerState.running: runningAnimation,
       PlayerState.jumping: jumpingAnimation,
+      PlayerState.doubleJumping: doubleJumpingAnimation,
       PlayerState.falling: fallingAnimation,
       PlayerState.hit: hitAnimation,
       PlayerState.appearing: appearingAnimation,
@@ -147,16 +172,23 @@ class Player extends SpriteAnimationGroupComponent
 
   void _updatePlayerState() {
     PlayerState playerState = PlayerState.idle;
-    if (velocity.x < 0 && scale.x > 0) flipHorizontallyAroundCenter();
-    else if (velocity.x > 0 && scale.x < 0) flipHorizontallyAroundCenter();
+    if (velocity.x < 0 && scale.x > 0) {
+      flipHorizontallyAroundCenter();
+    } else if (velocity.x > 0 && scale.x < 0) {
+      flipHorizontallyAroundCenter();
+    }
     if (velocity.x > 0 || velocity.x < 0) playerState = PlayerState.running;
     if (velocity.y > 0) playerState = PlayerState.falling;
-    if (velocity.y < 0) playerState = PlayerState.jumping;
+    if (velocity.y < 0) {
+      playerState = jumpCount > 1 ? PlayerState.doubleJumping : PlayerState.jumping;
+    }
     current = playerState;
   }
 
   void _updatePlayerMovement(double dt) {
-    if (hasJumped && isOnGround) _playerJump(dt);
+    if (hasJumped && (isOnGround || jumpCount < maxJumpCount)) {
+      _playerJump(dt);
+    }
     velocity.x = horizontalMovement * moveSpeed;
     position.x += velocity.x * dt;
   }
@@ -167,10 +199,12 @@ class Player extends SpriteAnimationGroupComponent
     position.y += velocity.y * dt;
     isOnGround = false;
     hasJumped = false;
+    jumpCount++;
   }
 
   void _checkHorizontalCollisions() {
     for (final block in collisionBlocks) {
+      if (!block.isActive) continue;
       if (!block.isPlatform) {
         if (checkCollision(this, block)) {
           if (velocity.x > 0) {
@@ -196,12 +230,14 @@ class Player extends SpriteAnimationGroupComponent
 
   void _checkVerticalCollisions() {
     for (final block in collisionBlocks) {
+      if (!block.isActive) continue;
       if (block.isPlatform) {
         if (checkCollision(this, block)) {
           if (velocity.y > 0) {
             velocity.y = 0;
             position.y = block.y - hitbox.height - hitbox.offsetY;
             isOnGround = true;
+            jumpCount = 0;
             break;
           }
         }
@@ -211,6 +247,7 @@ class Player extends SpriteAnimationGroupComponent
             velocity.y = 0;
             position.y = block.y - hitbox.height - hitbox.offsetY;
             isOnGround = true;
+            jumpCount = 0;
             break;
           }
           if (velocity.y < 0) {
@@ -223,8 +260,11 @@ class Player extends SpriteAnimationGroupComponent
   }
 
   void _respawn() async {
+    if (gotHit || reachedCheckpoint) return;
+
     if (game.playSounds) FlameAudio.play('hit.wav', volume: game.soundVolume);
     ScoreManager.instance.incrementDeath();
+    AchievementManager.instance.recordDeath();
 
     // Game Over after 5 deaths
     if (ScoreManager.instance.deathCount >= 5) {
@@ -247,6 +287,7 @@ class Player extends SpriteAnimationGroupComponent
     animationTicker?.reset();
 
     velocity = Vector2.zero();
+    jumpCount = 0;
     position = startingPosition;
     _updatePlayerState();
     Future.delayed(canMoveDuration, () => gotHit = false);
@@ -254,6 +295,7 @@ class Player extends SpriteAnimationGroupComponent
 
   void _reachedCheckpoint() async {
     reachedCheckpoint = true;
+    AchievementManager.instance.recordCheckpoint();
     if (game.playSounds) FlameAudio.play('disappear.wav', volume: game.soundVolume);
     if (scale.x > 0) {
       position = position - Vector2.all(32);
@@ -266,14 +308,38 @@ class Player extends SpriteAnimationGroupComponent
     await animationTicker?.completed;
     animationTicker?.reset();
 
-    reachedCheckpoint = false;
     position = Vector2.all(-640);
 
     const waitToChangeDuration = Duration(seconds: 3);
-    Future.delayed(waitToChangeDuration, () => game.loadNextLevel());
+    Future.delayed(waitToChangeDuration, () {
+      game.loadNextLevel();
+    });
+  }
+
+  void _checkFallOutOfMap() {
+    final mapBottom = game.currentMapSize.y;
+    if (mapBottom > 0 && position.y > mapBottom + 64) {
+      _respawn();
+    }
+  }
+
+  void requestJump() {
+    hasJumped = true;
+  }
+
+  void bounceFromEnemy(double bounceForce) {
+    velocity.y = -bounceForce;
+    isOnGround = false;
+    hasJumped = false;
+    jumpCount = 1;
   }
 
   void collidedwithEnemy() {
     _respawn();
+  }
+
+  void killedEnemy() {
+    ScoreManager.instance.addEnemyKillScore();
+    AchievementManager.instance.recordEnemyKill();
   }
 }

@@ -16,20 +16,22 @@ import 'package:pixel_adventure/components/traps/falling_platform.dart';
 import 'package:pixel_adventure/components/traps/fire.dart';
 import 'package:pixel_adventure/pixel_adventure.dart';
 
-class Level extends World with HasGameRef<PixelAdventure> {
+class Level extends World with HasGameReference<PixelAdventure> {
   final String levelName;
   final Player player;
   Level({required this.levelName, required this.player});
   late TiledComponent level;
   List<CollisionBlock> collisionBlocks = [];
+  TiledObject? _finishCheckpoint;
 
   @override
   FutureOr<void> onLoad() async {
     level = await TiledComponent.load('$levelName.tmx', Vector2.all(16));
     add(level);
+    game.configureCameraBounds(level.size);
     _scrollingBackground();
-    _spawningObjects();
     _addCollisions();
+    _spawningObjects();
     return super.onLoad();
   }
 
@@ -45,17 +47,30 @@ class Level extends World with HasGameRef<PixelAdventure> {
   void _spawningObjects() {
     final spawnPointsLayer = level.tileMap.getLayer<ObjectGroup>('Spawnpoints');
     if (spawnPointsLayer != null) {
+      final fruitCount = spawnPointsLayer.objects
+          .where((spawnPoint) => spawnPoint.class_ == 'Fruit')
+          .length;
+      game.scoreManager.setLevelFruitTotal(fruitCount);
+      _finishCheckpoint = _findFinishCheckpoint(spawnPointsLayer);
+
       for (final spawnPoint in spawnPointsLayer.objects) {
         switch (spawnPoint.class_) {
           case 'Player':
-            player.position = Vector2(spawnPoint.x, spawnPoint.y);
+            player.position = _adjustSolidPosition(
+              Vector2(spawnPoint.x, spawnPoint.y),
+              Vector2(spawnPoint.width, spawnPoint.height),
+            );
             player.scale.x = 1;
             add(player);
             break;
           case 'Fruit':
+            final position = _adjustFruitPosition(
+              Vector2(spawnPoint.x, spawnPoint.y),
+              Vector2(spawnPoint.width, spawnPoint.height),
+            );
             add(Fruit(
               fruit: spawnPoint.name,
-              position: Vector2(spawnPoint.x, spawnPoint.y),
+              position: position,
               size: Vector2(spawnPoint.width, spawnPoint.height),
             ));
             break;
@@ -72,16 +87,21 @@ class Level extends World with HasGameRef<PixelAdventure> {
             ));
             break;
           case 'Checkpoint':
-            add(Checkpoint(
-              position: Vector2(spawnPoint.x, spawnPoint.y),
-              size: Vector2(spawnPoint.width, spawnPoint.height),
-            ));
+            if (identical(spawnPoint, _finishCheckpoint)) {
+              add(Checkpoint(
+                position: Vector2(spawnPoint.x, spawnPoint.y),
+                size: Vector2(spawnPoint.width, spawnPoint.height),
+              ));
+            }
             break;
           case 'Chicken':
             final offNeg = spawnPoint.properties.getValue('offNeg');
             final offPos = spawnPoint.properties.getValue('offPos');
             add(Chicken(
-              position: Vector2(spawnPoint.x, spawnPoint.y),
+              position: _adjustSolidPosition(
+                Vector2(spawnPoint.x, spawnPoint.y),
+                Vector2(spawnPoint.width, spawnPoint.height),
+              ),
               size: Vector2(spawnPoint.width, spawnPoint.height),
               offNeg: offNeg,
               offPos: offPos,
@@ -91,7 +111,10 @@ class Level extends World with HasGameRef<PixelAdventure> {
             final offNeg = spawnPoint.properties.getValue('offNeg');
             final offPos = spawnPoint.properties.getValue('offPos');
             add(Bunny(
-              position: Vector2(spawnPoint.x, spawnPoint.y),
+              position: _adjustSolidPosition(
+                Vector2(spawnPoint.x, spawnPoint.y),
+                Vector2(spawnPoint.width, spawnPoint.height),
+              ),
               size: Vector2(spawnPoint.width, spawnPoint.height),
               offNeg: offNeg ?? 0,
               offPos: offPos ?? 0,
@@ -111,16 +134,27 @@ class Level extends World with HasGameRef<PixelAdventure> {
             final offNeg = spawnPoint.properties.getValue('offNeg');
             final offPos = spawnPoint.properties.getValue('offPos');
             add(Mushroom(
-              position: Vector2(spawnPoint.x, spawnPoint.y),
+              position: _adjustSolidPosition(
+                Vector2(spawnPoint.x, spawnPoint.y),
+                Vector2(spawnPoint.width, spawnPoint.height),
+              ),
               size: Vector2(spawnPoint.width, spawnPoint.height),
               offNeg: offNeg ?? 0,
               offPos: offPos ?? 0,
             ));
             break;
           case 'FallingPlatform':
+            final platformBlock = CollisionBlock(
+              position: Vector2(spawnPoint.x, spawnPoint.y),
+              size: Vector2(spawnPoint.width, spawnPoint.height),
+              isPlatform: true,
+            );
+            collisionBlocks.add(platformBlock);
+            add(platformBlock);
             add(FallingPlatform(
               position: Vector2(spawnPoint.x, spawnPoint.y),
               size: Vector2(spawnPoint.width, spawnPoint.height),
+              collisionBlock: platformBlock,
             ));
             break;
           case 'Fire':
@@ -132,33 +166,126 @@ class Level extends World with HasGameRef<PixelAdventure> {
           default:
         }
       }
+      player.collisionBlocks = List.unmodifiable(collisionBlocks);
     }
   }
 
+  TiledObject? _findFinishCheckpoint(ObjectGroup spawnPointsLayer) {
+    final checkpoints = spawnPointsLayer.objects
+        .where((spawnPoint) => spawnPoint.class_ == 'Checkpoint')
+        .toList();
+    if (checkpoints.isEmpty) return null;
+    checkpoints.sort((a, b) => a.x.compareTo(b.x));
+    return checkpoints.last;
+  }
+
+  Vector2 _adjustFruitPosition(
+    Vector2 position,
+    Vector2 size,
+  ) {
+    final adjusted = position.clone();
+
+    for (var pass = 0; pass < 4; pass++) {
+      var moved = false;
+      for (final block in collisionBlocks) {
+        final overlaps = adjusted.x < block.x + block.width &&
+            adjusted.x + size.x > block.x &&
+            adjusted.y < block.y + block.height &&
+            adjusted.y + size.y > block.y;
+
+        if (overlaps) {
+          adjusted.y = block.y - size.y - 2;
+          moved = true;
+        }
+      }
+      if (!moved) break;
+    }
+
+    if (_finishCheckpoint != null) {
+      final checkpoint = _finishCheckpoint!;
+      final nearFinish = adjusted.x < checkpoint.x + checkpoint.width + 24 &&
+          adjusted.x + size.x > checkpoint.x - 24 &&
+          adjusted.y < checkpoint.y + checkpoint.height + 24 &&
+          adjusted.y + size.y > checkpoint.y - 24;
+
+      if (nearFinish) {
+        adjusted.x = checkpoint.x - size.x - 48;
+        adjusted.y = checkpoint.y - size.y - 8;
+      }
+    }
+
+    return adjusted;
+  }
+
+  Vector2 _adjustSolidPosition(Vector2 position, Vector2 size) {
+    final adjusted = position.clone();
+
+    for (var pass = 0; pass < 6; pass++) {
+      var moved = false;
+      for (final block in collisionBlocks) {
+        final overlaps = adjusted.x < block.x + block.width &&
+            adjusted.x + size.x > block.x &&
+            adjusted.y < block.y + block.height &&
+            adjusted.y + size.y > block.y;
+
+        if (overlaps) {
+          adjusted.y = block.y - size.y;
+          moved = true;
+        }
+      }
+      if (!moved) break;
+    }
+
+    return adjusted;
+  }
+
   void _addCollisions() {
-    final collisionsLayer = level.tileMap.getLayer<ObjectGroup>('Collisions');
-    if (collisionsLayer != null) {
-      for (final collision in collisionsLayer.objects) {
-        switch (collision.class_) {
-          case 'Platform':
-            final platform = CollisionBlock(
-              position: Vector2(collision.x, collision.y),
-              size: Vector2(collision.width, collision.height),
-              isPlatform: true,
-            );
-            collisionBlocks.add(platform);
-            add(platform);
-            break;
-          default:
+    final terrainLayer = level.tileMap.getLayer<TileLayer>('Background');
+    if (terrainLayer != null && terrainLayer.data != null) {
+      final data = terrainLayer.data!;
+      final tileWidth = level.tileMap.map.tileWidth.toDouble();
+      final tileHeight = level.tileMap.map.tileHeight.toDouble();
+
+      for (var y = 0; y < terrainLayer.height; y++) {
+        var runStart = -1;
+        var runIsPlatform = false;
+        for (var x = 0; x <= terrainLayer.width; x++) {
+          final gid = x < terrainLayer.width
+              ? data[(y * terrainLayer.width) + x]
+              : 0;
+          final isSolid = _isSolidTile(gid);
+          final isPlatform = _isOneWayPlatformTile(gid);
+
+          if (isSolid && runStart == -1) {
+            runStart = x;
+            runIsPlatform = isPlatform;
+          } else if ((!isSolid || isPlatform != runIsPlatform) &&
+              runStart != -1) {
             final block = CollisionBlock(
-              position: Vector2(collision.x, collision.y),
-              size: Vector2(collision.width, collision.height),
+              position: Vector2(runStart * tileWidth, y * tileHeight),
+              size: Vector2((x - runStart) * tileWidth, tileHeight),
+              isPlatform: runIsPlatform,
             );
             collisionBlocks.add(block);
             add(block);
+            runStart = isSolid ? x : -1;
+            runIsPlatform = isPlatform;
+          }
         }
       }
     }
-    player.collisionBlocks = collisionBlocks;
+  }
+
+  bool _isSolidTile(int gid) {
+    return gid != 0 && gid != 24;
+  }
+
+  bool _isOneWayPlatformTile(int gid) {
+    return gid == 13 ||
+        gid == 14 ||
+        gid == 15 ||
+        gid == 40 ||
+        gid == 41 ||
+        gid == 42;
   }
 }
