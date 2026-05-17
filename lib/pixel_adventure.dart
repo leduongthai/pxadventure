@@ -1,12 +1,12 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/experimental.dart' as flame_geometry;
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
-import 'package:flutter/foundation.dart' show ValueNotifier, kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, ValueNotifier, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/painting.dart';
 import 'package:pixel_adventure/components/hud/game_hud.dart';
 import 'package:pixel_adventure/components/jump_button.dart';
@@ -34,6 +34,8 @@ class PixelAdventure extends FlameGame
   final ValueNotifier<double> transitionOpacity = ValueNotifier(0);
   Vector2 currentMapSize = Vector2.zero();
   bool _levelCompleteVisible = false;
+  bool _pauseMenuVisible = false;
+  bool _gameOverVisible = false;
 
   final List<String> levelNames = [
     'Level-01',
@@ -53,7 +55,10 @@ class PixelAdventure extends FlameGame
 
   final ScoreManager scoreManager = ScoreManager.instance;
 
-  bool get isMobile => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+  bool get isMobile =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
 
   PixelAdventure({int initialLevelIndex = 0}) {
     currentLevelIndex = initialLevelIndex;
@@ -88,7 +93,8 @@ class PixelAdventure extends FlameGame
     joystick = JoystickComponent(
       priority: 10,
       knob: SpriteComponent(sprite: Sprite(images.fromCache('HUD/Knob.png'))),
-      background: SpriteComponent(sprite: Sprite(images.fromCache('HUD/Joystick.png'))),
+      background:
+          SpriteComponent(sprite: Sprite(images.fromCache('HUD/Joystick.png'))),
       margin: const EdgeInsets.only(left: 32, bottom: 64),
     );
     add(joystick);
@@ -128,20 +134,21 @@ class PixelAdventure extends FlameGame
       completedLevel,
     );
     await AchievementManager.instance.recordLevelComplete(
-      scoreManager.deathCount,
-      scoreManager.currentScore,
-      SaveManager.instance.getUnlockedLevels(),
+      completedLevel: completedLevel,
+      deathCount: scoreManager.deathCount,
+      score: scoreManager.currentScore,
+      unlockedLevels: SaveManager.instance.getUnlockedLevels(),
     );
 
     _levelCompleteVisible = true;
     overlays.add('LevelComplete');
+    pauseEngine();
   }
 
   Future<void> continueToNextLevel() async {
     if (isLastLevel) return;
 
-    overlays.remove('LevelComplete');
-    _levelCompleteVisible = false;
+    dismissLevelComplete();
     await _fadeTransition(to: 1);
     currentLevelIndex++;
     scoreManager.reset();
@@ -152,15 +159,63 @@ class PixelAdventure extends FlameGame
 
   void resetCurrentLevel() {
     _levelCompleteVisible = false;
+    _pauseMenuVisible = false;
+    _gameOverVisible = false;
+    overlays.remove('LevelComplete');
+    overlays.remove('PauseMenu');
+    overlays.remove('GameOver');
+    resumeEngine();
     scoreManager.reset();
     final character = SaveManager.instance.getSelectedCharacter();
     player = Player(character: character);
     _reloadLevel();
   }
 
-  Future<void> _reloadLevel({Duration delay = const Duration(milliseconds: 500)}) async {
+  void showPauseMenu() {
+    if (_pauseMenuVisible || _levelCompleteVisible || _gameOverVisible) return;
+
+    _pauseMenuVisible = true;
+    overlays.add('PauseMenu');
+    pauseEngine();
+  }
+
+  void dismissPauseMenu() {
+    if (_pauseMenuVisible) {
+      overlays.remove('PauseMenu');
+      _pauseMenuVisible = false;
+    }
+    resumeEngine();
+  }
+
+  void showGameOver() {
+    if (_gameOverVisible) return;
+
+    _gameOverVisible = true;
+    overlays.add('GameOver');
+    pauseEngine();
+  }
+
+  void dismissGameOver() {
+    if (_gameOverVisible) {
+      overlays.remove('GameOver');
+      _gameOverVisible = false;
+    }
+    resumeEngine();
+  }
+
+  void dismissLevelComplete() {
+    if (_levelCompleteVisible) {
+      overlays.remove('LevelComplete');
+      _levelCompleteVisible = false;
+    }
+    resumeEngine();
+  }
+
+  Future<void> _reloadLevel(
+      {Duration delay = const Duration(milliseconds: 500)}) async {
     // Remove old world and camera
-    removeWhere((component) => component is Level || component is CameraComponent);
+    removeWhere(
+        (component) => component is Level || component is CameraComponent);
 
     await Future.delayed(delay);
     _buildLevel();
@@ -181,7 +236,8 @@ class PixelAdventure extends FlameGame
       levelName: levelNames[currentLevelIndex],
     );
 
-    cam = CameraComponent.withFixedResolution(world: world, width: 640, height: 360);
+    cam = CameraComponent.withFixedResolution(
+        world: world, width: 640, height: 360);
     cam.follow(player, snap: true);
 
     final hud = GameHUD();

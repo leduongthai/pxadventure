@@ -37,7 +37,8 @@ class PixelAdventureApp extends StatelessWidget {
           case '/':
             return MaterialPageRoute(builder: (_) => const MainMenuScreen());
           case '/character':
-            return MaterialPageRoute(builder: (_) => const CharacterSelectScreen());
+            return MaterialPageRoute(
+                builder: (_) => const CharacterSelectScreen());
           case '/levels':
             return MaterialPageRoute(builder: (_) => const LevelSelectScreen());
           case '/game':
@@ -49,7 +50,8 @@ class PixelAdventureApp extends StatelessWidget {
           case '/leaderboard':
             return MaterialPageRoute(builder: (_) => const LeaderboardScreen());
           case '/achievements':
-            return MaterialPageRoute(builder: (_) => const AchievementsScreen());
+            return MaterialPageRoute(
+                builder: (_) => const AchievementsScreen());
           case '/name':
             return MaterialPageRoute(builder: (_) => const PlayerNameScreen());
           default:
@@ -59,4 +61,3 @@ class PixelAdventureApp extends StatelessWidget {
     );
   }
 }
-

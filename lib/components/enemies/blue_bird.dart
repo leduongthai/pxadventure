@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame_audio/flame_audio.dart';
+import 'package:pixel_adventure/components/custom_hitbox.dart';
 import 'package:pixel_adventure/pixel_adventure.dart';
 
 enum _BlueBirdState { flying, hit }
@@ -24,6 +25,7 @@ class BlueBird extends SpriteAnimationGroupComponent
   static const moveSpeed = 60.0;
   static const _bounceHeight = 260.0;
   final textureSize = Vector2(32, 32);
+  final hitbox = CustomHitbox(offsetX: 2, offsetY: 5, width: 28, height: 23);
 
   double moveDirection = 1;
   double rangeNeg = 0;
@@ -32,9 +34,13 @@ class BlueBird extends SpriteAnimationGroupComponent
 
   @override
   FutureOr<void> onLoad() {
-    add(RectangleHitbox(position: Vector2(4, 4), size: Vector2(24, 24)));
+    add(RectangleHitbox(
+      position: hitbox.scaledPosition(size, textureSize),
+      size: hitbox.scaledSize(size, textureSize),
+    ));
     _loadAnimations();
     _calculateRange();
+    _faceMovementDirection();
     return super.onLoad();
   }
 
@@ -42,11 +48,16 @@ class BlueBird extends SpriteAnimationGroupComponent
     animations = {
       _BlueBirdState.flying: SpriteAnimation.fromFrameData(
         game.images.fromCache('Enemies/BlueBird/Flying (32x32).png'),
-        SpriteAnimationData.sequenced(amount: 9, stepTime: stepTime, textureSize: textureSize),
+        SpriteAnimationData.sequenced(
+            amount: 9, stepTime: stepTime, textureSize: textureSize),
       ),
       _BlueBirdState.hit: SpriteAnimation.fromFrameData(
         game.images.fromCache('Enemies/BlueBird/Hit (32x32).png'),
-        SpriteAnimationData.sequenced(amount: 5, stepTime: stepTime, textureSize: textureSize, loop: false),
+        SpriteAnimationData.sequenced(
+            amount: 5,
+            stepTime: stepTime,
+            textureSize: textureSize,
+            loop: false),
       ),
     };
     current = _BlueBirdState.flying;
@@ -66,32 +77,44 @@ class BlueBird extends SpriteAnimationGroupComponent
   void _moveHorizontally(double dt) {
     if (position.x >= rangePos) {
       moveDirection = -1;
-      if (scale.x > 0) flipHorizontallyAroundCenter();
     } else if (position.x <= rangeNeg) {
       moveDirection = 1;
-      if (scale.x < 0) flipHorizontallyAroundCenter();
     }
+    _faceMovementDirection();
     position.x += moveDirection * moveSpeed * dt;
+  }
+
+  void _faceMovementDirection() {
+    // BlueBird asset faces left by default.
+    if (moveDirection > 0 && scale.x > 0) {
+      flipHorizontallyAroundCenter();
+    } else if (moveDirection < 0 && scale.x < 0) {
+      flipHorizontallyAroundCenter();
+    }
   }
 
   void collidedWithPlayer() async {
     final player = game.player;
-    final playerCenterY = player.y + player.height / 2;
-    final birdCenterY = position.y + height / 2;
-    final stompedFromAbove = player.velocity.y > 0 && playerCenterY < birdCenterY;
-
-    if (stompedFromAbove) {
+    if (_wasStompedByPlayer()) {
       if (game.playSounds) {
         FlameAudio.play('bounce.wav', volume: game.soundVolume);
       }
       gotHit = true;
       current = _BlueBirdState.hit;
       player.bounceFromEnemy(_bounceHeight);
-      game.scoreManager.addEnemyKillScore();
+      player.killedEnemy();
       await animationTicker?.completed;
       removeFromParent();
     } else {
       player.collidedwithEnemy();
     }
+  }
+
+  bool _wasStompedByPlayer() {
+    final player = game.player;
+    final hitboxTop = y + hitbox.scaledTop(size, textureSize);
+    return player.velocity.y > 0 &&
+        player.hitboxBottom <= hitboxTop + 10 &&
+        player.hitboxTop < hitboxTop;
   }
 }

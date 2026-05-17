@@ -20,7 +20,8 @@ class SaveManager {
     final prefs = await SharedPreferences.getInstance();
     _playerName = prefs.getString(_keyPlayerName) ?? 'Player';
     _selectedCharacter = prefs.getString(_keySelectedCharacter) ?? 'Mask Dude';
-    _unlockedLevels = (prefs.getInt(_keyUnlockedLevels) ?? 1).clamp(1, maxLevels);
+    _unlockedLevels =
+        (prefs.getInt(_keyUnlockedLevels) ?? 1).clamp(1, maxLevels);
     _soundEnabled = prefs.getBool(_keySoundEnabled) ?? true;
   }
 

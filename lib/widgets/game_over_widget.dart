@@ -25,7 +25,11 @@ class GameOverWidget extends StatelessWidget {
           children: [
             const Text(
               'GAME OVER',
-              style: TextStyle(color: Colors.redAccent, fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: 3),
+              style: TextStyle(
+                  color: Colors.redAccent,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 3),
             ),
             const SizedBox(height: 16),
             Text(
@@ -37,7 +41,7 @@ class GameOverWidget extends StatelessWidget {
               label: 'THỬ LẠI',
               color: const Color(0xFF5B4EC8),
               onTap: () {
-                game.overlays.remove('GameOver');
+                game.dismissGameOver();
                 game.resetCurrentLevel();
               },
             ),
@@ -46,8 +50,9 @@ class GameOverWidget extends StatelessWidget {
               label: 'VỀ MENU',
               color: Colors.grey.shade700,
               onTap: () {
-                game.overlays.remove('GameOver');
-                Navigator.of(context).pushNamedAndRemoveUntil('/', (r) => false);
+                game.dismissGameOver();
+                Navigator.of(context)
+                    .pushNamedAndRemoveUntil('/', (r) => false);
               },
             ),
           ],
@@ -71,9 +76,14 @@ class _Btn extends StatelessWidget {
       child: Container(
         width: double.infinity,
         height: 44,
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(8)),
+        decoration:
+            BoxDecoration(color: color, borderRadius: BorderRadius.circular(8)),
         alignment: Alignment.center,
-        child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+        child: Text(label,
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.bold)),
       ),
     );
   }

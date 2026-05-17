@@ -43,18 +43,21 @@ class _PauseMenuWidgetState extends State<PauseMenuWidget> {
           children: [
             const Text(
               'TẠM DỪNG',
-              style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 3),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 3),
             ),
             const SizedBox(height: 24),
             _OverlayButton(
               label: 'TIẾP TỤC',
-              onTap: () => widget.game.overlays.remove('PauseMenu'),
+              onTap: widget.game.dismissPauseMenu,
             ),
             const SizedBox(height: 12),
             _OverlayButton(
               label: 'CHƠI LẠI',
               onTap: () {
-                widget.game.overlays.remove('PauseMenu');
                 widget.game.resetCurrentLevel();
               },
             ),
@@ -67,8 +70,9 @@ class _PauseMenuWidgetState extends State<PauseMenuWidget> {
             _OverlayButton(
               label: 'VỀ MENU',
               onTap: () {
-                widget.game.overlays.remove('PauseMenu');
-                Navigator.of(context).pushNamedAndRemoveUntil('/', (r) => false);
+                widget.game.dismissPauseMenu();
+                Navigator.of(context)
+                    .pushNamedAndRemoveUntil('/', (r) => false);
               },
             ),
           ],
@@ -98,7 +102,8 @@ class _OverlayButton extends StatelessWidget {
         alignment: Alignment.center,
         child: Text(
           label,
-          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+              color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
         ),
       ),
     );

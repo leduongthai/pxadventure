@@ -9,7 +9,8 @@ class MainMenuScreen extends StatefulWidget {
   State<MainMenuScreen> createState() => _MainMenuScreenState();
 }
 
-class _MainMenuScreenState extends State<MainMenuScreen> with SingleTickerProviderStateMixin {
+class _MainMenuScreenState extends State<MainMenuScreen>
+    with SingleTickerProviderStateMixin {
   bool _soundEnabled = true;
   String _playerName = 'Player';
   late AnimationController _pulseCtrl;
@@ -71,20 +72,26 @@ class _MainMenuScreenState extends State<MainMenuScreen> with SingleTickerProvid
                 child: GestureDetector(
                   onTap: _editName,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: const Color(0xFF2E2C45),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFF5B4EC8), width: 1.5),
+                      border: Border.all(
+                          color: const Color(0xFF5B4EC8), width: 1.5),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.person, color: Color(0xFF8B7CF8), size: 16),
+                        const Icon(Icons.person,
+                            color: Color(0xFF8B7CF8), size: 16),
                         const SizedBox(width: 6),
                         Text(
                           _playerName,
-                          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(width: 4),
                         const Icon(Icons.edit, color: Colors.white24, size: 12),
@@ -100,11 +107,13 @@ class _MainMenuScreenState extends State<MainMenuScreen> with SingleTickerProvid
                 child: GestureDetector(
                   onTap: () => Navigator.pushNamed(context, '/achievements'),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: const Color(0xFF2E2C45),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFFFD700), width: 1.5),
+                      border: Border.all(
+                          color: const Color(0xFFFFD700), width: 1.5),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -113,7 +122,10 @@ class _MainMenuScreenState extends State<MainMenuScreen> with SingleTickerProvid
                         const SizedBox(width: 4),
                         Text(
                           '${achievements.unlockedCount}/${achievements.totalCount}',
-                          style: const TextStyle(color: Color(0xFFFFD700), fontSize: 13, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              color: Color(0xFFFFD700),
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -130,7 +142,11 @@ class _MainMenuScreenState extends State<MainMenuScreen> with SingleTickerProvid
                       scale: _pulseAnim,
                       child: ShaderMask(
                         shaderCallback: (bounds) => const LinearGradient(
-                          colors: [Color(0xFF8B7CF8), Color(0xFFB4A9FF), Color(0xFF8B7CF8)],
+                          colors: [
+                            Color(0xFF8B7CF8),
+                            Color(0xFFB4A9FF),
+                            Color(0xFF8B7CF8)
+                          ],
                         ).createShader(bounds),
                         child: const Text(
                           'PIXEL\nADVENTURE',
@@ -148,14 +164,16 @@ class _MainMenuScreenState extends State<MainMenuScreen> with SingleTickerProvid
                     const SizedBox(height: 8),
                     // Level progress subtitle
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 6),
                       decoration: BoxDecoration(
                         color: const Color(0xFF2E2C45).withAlpha(180),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         '${(SaveManager.instance.getUnlockedLevels() - 1).clamp(0, 11)}/11 màn đã hoàn thành',
-                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                        style: const TextStyle(
+                            color: Colors.white54, fontSize: 12),
                       ),
                     ),
                     const SizedBox(height: 52),
@@ -172,7 +190,8 @@ class _MainMenuScreenState extends State<MainMenuScreen> with SingleTickerProvid
                     const SizedBox(height: 14),
                     _MenuButton(
                       label: '🏆  THÀNH TÍCH',
-                      onTap: () => Navigator.pushNamed(context, '/achievements').then((_) => setState(() {})),
+                      onTap: () => Navigator.pushNamed(context, '/achievements')
+                          .then((_) => setState(() {})),
                     ),
                     const SizedBox(height: 14),
                     _MenuButton(
@@ -181,7 +200,9 @@ class _MainMenuScreenState extends State<MainMenuScreen> with SingleTickerProvid
                     ),
                     const SizedBox(height: 14),
                     _MenuButton(
-                      label: _soundEnabled ? '🔊  ÂM THANH: BẬT' : '🔇  ÂM THANH: TẮT',
+                      label: _soundEnabled
+                          ? '🔊  ÂM THANH: BẬT'
+                          : '🔇  ÂM THANH: TẮT',
                       onTap: _toggleSound,
                       isSmall: true,
                     ),
@@ -194,7 +215,11 @@ class _MainMenuScreenState extends State<MainMenuScreen> with SingleTickerProvid
                       ),
                       child: const Text(
                         'Credits & Thông Tin',
-                        style: TextStyle(color: Colors.white24, fontSize: 12, decoration: TextDecoration.underline, decorationColor: Colors.white24),
+                        style: TextStyle(
+                            color: Colors.white24,
+                            fontSize: 12,
+                            decoration: TextDecoration.underline,
+                            decorationColor: Colors.white24),
                       ),
                     ),
                   ],
@@ -254,11 +279,18 @@ class _MenuButtonState extends State<_MenuButton> {
             color: widget.isPrimary ? null : const Color(0xFF2E2C45),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: widget.isPrimary ? const Color(0xFF9B8FF8) : const Color(0xFF5B4EC8),
+              color: widget.isPrimary
+                  ? const Color(0xFF9B8FF8)
+                  : const Color(0xFF5B4EC8),
               width: widget.isPrimary ? 2 : 1.5,
             ),
             boxShadow: widget.isPrimary
-                ? [const BoxShadow(color: Color(0x885B4EC8), blurRadius: 16, offset: Offset(0, 4))]
+                ? [
+                    const BoxShadow(
+                        color: Color(0x885B4EC8),
+                        blurRadius: 16,
+                        offset: Offset(0, 4))
+                  ]
                 : null,
           ),
           alignment: Alignment.center,
@@ -295,7 +327,11 @@ class _CreditsDialog extends StatelessWidget {
           children: [
             const Text(
               '🎮 PIXEL ADVENTURE',
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 2),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2),
             ),
             const SizedBox(height: 20),
             _creditRow('👨‍💻 Lập trình', 'Le Duong Thai'),
@@ -306,7 +342,8 @@ class _CreditsDialog extends StatelessWidget {
             const SizedBox(height: 24),
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Đóng', style: TextStyle(color: Color(0xFF8B7CF8))),
+              child: const Text('Đóng',
+                  style: TextStyle(color: Color(0xFF8B7CF8))),
             ),
           ],
         ),
@@ -320,12 +357,16 @@ class _CreditsDialog extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white54, fontSize: 13)),
+          Text(label,
+              style: const TextStyle(color: Colors.white54, fontSize: 13)),
           const SizedBox(width: 12),
           Flexible(
             child: Text(
               value,
-              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600),
               textAlign: TextAlign.end,
             ),
           ),
@@ -334,4 +375,3 @@ class _CreditsDialog extends StatelessWidget {
     );
   }
 }
-

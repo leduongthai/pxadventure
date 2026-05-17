@@ -60,9 +60,16 @@ class Player extends SpriteAnimationGroupComponent
   bool gotHit = false;
   bool reachedCheckpoint = false;
   List<CollisionBlock> collisionBlocks = [];
-  CustomHitbox hitbox = CustomHitbox(offsetX: 10, offsetY: 4, width: 14, height: 28);
+  CustomHitbox hitbox =
+      CustomHitbox(offsetX: 10, offsetY: 4, width: 14, height: 28);
   double fixedDeltaTime = 1 / 60;
   double accumulatedTime = 0;
+
+  double get hitboxLeft => scale.x < 0
+      ? position.x - hitbox.offsetX - hitbox.width
+      : position.x + hitbox.offsetX;
+  double get hitboxTop => position.y + hitbox.offsetY;
+  double get hitboxBottom => hitboxTop + hitbox.height;
 
   @override
   FutureOr<void> onLoad() {
@@ -93,7 +100,8 @@ class Player extends SpriteAnimationGroupComponent
   }
 
   @override
-  bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) { // Đã đổi RawKeyEvent -> KeyEvent
+  bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
+    // Đã đổi RawKeyEvent -> KeyEvent
     horizontalMovement = 0;
 
     final isLeftKeyPressed = keysPressed.contains(LogicalKeyboardKey.keyA) ||
@@ -119,7 +127,8 @@ class Player extends SpriteAnimationGroupComponent
   }
 
   @override
-  void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) {
+  void onCollisionStart(
+      Set<Vector2> intersectionPoints, PositionComponent other) {
     if (!reachedCheckpoint) {
       if (other is Fruit) other.collidedWithPlayer();
       if (other is Saw) _respawn();
@@ -159,14 +168,19 @@ class Player extends SpriteAnimationGroupComponent
   SpriteAnimation _spriteAnimation(String state, int amount) {
     return SpriteAnimation.fromFrameData(
       game.images.fromCache('Main Characters/$character/$state (32x32).png'),
-      SpriteAnimationData.sequenced(amount: amount, stepTime: stepTime, textureSize: Vector2.all(32)),
+      SpriteAnimationData.sequenced(
+          amount: amount, stepTime: stepTime, textureSize: Vector2.all(32)),
     );
   }
 
   SpriteAnimation _specialSpriteAnimation(String state, int amount) {
     return SpriteAnimation.fromFrameData(
       game.images.fromCache('Main Characters/$state (96x96).png'),
-      SpriteAnimationData.sequenced(amount: amount, stepTime: stepTime, textureSize: Vector2.all(96), loop: false),
+      SpriteAnimationData.sequenced(
+          amount: amount,
+          stepTime: stepTime,
+          textureSize: Vector2.all(96),
+          loop: false),
     );
   }
 
@@ -180,7 +194,8 @@ class Player extends SpriteAnimationGroupComponent
     if (velocity.x > 0 || velocity.x < 0) playerState = PlayerState.running;
     if (velocity.y > 0) playerState = PlayerState.falling;
     if (velocity.y < 0) {
-      playerState = jumpCount > 1 ? PlayerState.doubleJumping : PlayerState.jumping;
+      playerState =
+          jumpCount > 1 ? PlayerState.doubleJumping : PlayerState.jumping;
     }
     current = playerState;
   }
@@ -229,6 +244,8 @@ class Player extends SpriteAnimationGroupComponent
   }
 
   void _checkVerticalCollisions() {
+    isOnGround = false;
+
     for (final block in collisionBlocks) {
       if (!block.isActive) continue;
       if (block.isPlatform) {
@@ -268,7 +285,7 @@ class Player extends SpriteAnimationGroupComponent
 
     // Game Over after 5 deaths
     if (ScoreManager.instance.deathCount >= 5) {
-      game.overlays.add('GameOver');
+      game.showGameOver();
       return;
     }
 
@@ -296,7 +313,9 @@ class Player extends SpriteAnimationGroupComponent
   void _reachedCheckpoint() async {
     reachedCheckpoint = true;
     AchievementManager.instance.recordCheckpoint();
-    if (game.playSounds) FlameAudio.play('disappear.wav', volume: game.soundVolume);
+    if (game.playSounds) {
+      FlameAudio.play('disappear.wav', volume: game.soundVolume);
+    }
     if (scale.x > 0) {
       position = position - Vector2.all(32);
     } else if (scale.x < 0) {

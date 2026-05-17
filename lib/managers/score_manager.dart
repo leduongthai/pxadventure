@@ -69,7 +69,8 @@ class ScoreManager {
   int calculateStars() {
     if (totalFruitsInLevel == 0) return 1;
     final collectedAllFruits = totalFruitCollected >= totalFruitsInLevel;
-    final collectedHalfFruits = totalFruitCollected >= (totalFruitsInLevel / 2).ceil();
+    final collectedHalfFruits =
+        totalFruitCollected >= (totalFruitsInLevel / 2).ceil();
 
     if (collectedAllFruits && deathCount == 0) return 3;
     if (collectedHalfFruits) return 2;

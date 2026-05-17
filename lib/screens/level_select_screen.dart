@@ -66,7 +66,10 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
         ),
         title: const Text(
           'CHỌN LEVEL',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 2),
+          style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2),
         ),
         centerTitle: true,
         actions: [
@@ -75,7 +78,10 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
             child: Center(
               child: Text(
                 '$completed/$_totalLevels',
-                style: const TextStyle(color: Color(0xFFFFD700), fontSize: 14, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Color(0xFFFFD700),
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -91,7 +97,8 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
               child: LinearProgressIndicator(
                 value: completed / _totalLevels,
                 backgroundColor: const Color(0xFF2E2C45),
-                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF5B4EC8)),
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(Color(0xFF5B4EC8)),
                 minHeight: 6,
               ),
             ),
@@ -119,28 +126,41 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       decoration: BoxDecoration(
-                        color: unlocked ? const Color(0xFF2E2C45) : const Color(0xFF1E1C2E),
+                        color: unlocked
+                            ? const Color(0xFF2E2C45)
+                            : const Color(0xFF1E1C2E),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: unlocked
-                              ? (stars > 0 ? const Color(0xFFFFD700) : const Color(0xFF5B4EC8))
+                              ? (stars > 0
+                                  ? const Color(0xFFFFD700)
+                                  : const Color(0xFF5B4EC8))
                               : const Color(0xFF333345),
                           width: 2,
                         ),
                         boxShadow: unlocked
-                            ? [BoxShadow(color: const Color(0xFF5B4EC8).withAlpha(60), blurRadius: 8, offset: const Offset(0, 4))]
+                            ? [
+                                BoxShadow(
+                                    color:
+                                        const Color(0xFF5B4EC8).withAlpha(60),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4))
+                              ]
                             : null,
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           if (!unlocked)
-                            const Icon(Icons.lock_outline, color: Colors.white24, size: 28)
+                            const Icon(Icons.lock_outline,
+                                color: Colors.white24, size: 28)
                           else
                             Text(
                               '$level',
                               style: TextStyle(
-                                color: stars > 0 ? const Color(0xFFFFD700) : Colors.white,
+                                color: stars > 0
+                                    ? const Color(0xFFFFD700)
+                                    : Colors.white,
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -163,14 +183,20 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                               children: [
                                 Text(
                                   '★' * stars + '☆' * (3 - stars),
-                                  style: const TextStyle(color: Color(0xFFFFD700), fontSize: 10, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                      color: Color(0xFFFFD700),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 2),
                             Text(
                               '$highScore',
-                              style: const TextStyle(color: Colors.white38, fontSize: 9, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold),
                             ),
                           ],
                         ],

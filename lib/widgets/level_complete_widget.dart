@@ -30,19 +30,26 @@ class LevelCompleteWidget extends StatelessWidget {
           children: [
             const Text(
               'LEVEL HOÀN THÀNH!',
-              style: TextStyle(color: Color(0xFFFFD700), fontSize: 22, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: Color(0xFFFFD700),
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            Text('Điểm: $score', style: const TextStyle(color: Colors.white, fontSize: 20)),
+            Text('Điểm: $score',
+                style: const TextStyle(color: Colors.white, fontSize: 20)),
             const SizedBox(height: 4),
-            Text('Trái cây: $fruits/$totalFruits 🍎', style: const TextStyle(color: Colors.white70, fontSize: 16)),
+            Text('Trái cây: $fruits/$totalFruits 🍎',
+                style: const TextStyle(color: Colors.white70, fontSize: 16)),
             const SizedBox(height: 4),
-            Text('Số lần chết: $deaths', style: const TextStyle(color: Colors.white70, fontSize: 16)),
+            Text('Số lần chết: $deaths',
+                style: const TextStyle(color: Colors.white70, fontSize: 16)),
             const SizedBox(height: 12),
             Text(
               '★' * stars + '☆' * (3 - stars),
-              style: const TextStyle(color: Color(0xFFFFD700), fontSize: 26, letterSpacing: 2),
+              style: const TextStyle(
+                  color: Color(0xFFFFD700), fontSize: 26, letterSpacing: 2),
             ),
             const SizedBox(height: 6),
             const Text(
@@ -55,9 +62,10 @@ class LevelCompleteWidget extends StatelessWidget {
               label: isLastLevel ? 'VỀ MENU' : 'LEVEL TIẾP',
               color: const Color(0xFF5B4EC8),
               onTap: () {
-                game.overlays.remove('LevelComplete');
                 if (isLastLevel) {
-                  Navigator.of(context).pushNamedAndRemoveUntil('/', (r) => false);
+                  game.dismissLevelComplete();
+                  Navigator.of(context)
+                      .pushNamedAndRemoveUntil('/', (r) => false);
                 } else {
                   game.continueToNextLevel();
                 }
@@ -69,8 +77,9 @@ class LevelCompleteWidget extends StatelessWidget {
                 label: 'VỀ MENU',
                 color: Colors.grey.shade700,
                 onTap: () {
-                  game.overlays.remove('LevelComplete');
-                  Navigator.of(context).pushNamedAndRemoveUntil('/', (r) => false);
+                  game.dismissLevelComplete();
+                  Navigator.of(context)
+                      .pushNamedAndRemoveUntil('/', (r) => false);
                 },
               ),
             ],
@@ -95,9 +104,14 @@ class _Btn extends StatelessWidget {
       child: Container(
         width: double.infinity,
         height: 44,
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(8)),
+        decoration:
+            BoxDecoration(color: color, borderRadius: BorderRadius.circular(8)),
         alignment: Alignment.center,
-        child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+        child: Text(label,
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.bold)),
       ),
     );
   }

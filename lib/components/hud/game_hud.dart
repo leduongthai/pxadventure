@@ -18,18 +18,25 @@ class GameHUD extends PositionComponent with HasGameReference<PixelAdventure> {
 
   @override
   Future<void> onLoad() async {
-    const style = TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold);
+    const style = TextStyle(
+        color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold);
     final renderer = TextPaint(style: style);
 
-    _scoreText = TextComponent(text: 'Score: 0', textRenderer: renderer, position: Vector2(8, 8));
-    _levelText = TextComponent(text: 'Level: 1', textRenderer: renderer, position: Vector2(8, 28));
-    _deathText = TextComponent(text: '💀 0', textRenderer: renderer, position: Vector2(8, 48));
-    _fruitText = TextComponent(text: '🍎 0/0', textRenderer: renderer, position: Vector2(8, 68));
-    _starText = TextComponent(text: '★ 1/3', textRenderer: renderer, position: Vector2(8, 88));
+    _scoreText = TextComponent(
+        text: 'Score: 0', textRenderer: renderer, position: Vector2(8, 8));
+    _levelText = TextComponent(
+        text: 'Level: 1', textRenderer: renderer, position: Vector2(8, 28));
+    _deathText = TextComponent(
+        text: '💀 0', textRenderer: renderer, position: Vector2(8, 48));
+    _fruitText = TextComponent(
+        text: '🍎 0/0', textRenderer: renderer, position: Vector2(8, 68));
+    _starText = TextComponent(
+        text: '★ 1/3', textRenderer: renderer, position: Vector2(8, 88));
 
     final pauseBtn = _PauseButton(position: Vector2(_camWidth - 40, 8));
 
-    addAll([_scoreText, _levelText, _deathText, _fruitText, _starText, pauseBtn]);
+    addAll(
+        [_scoreText, _levelText, _deathText, _fruitText, _starText, pauseBtn]);
     return super.onLoad();
   }
 
@@ -65,6 +72,6 @@ class _PauseButton extends PositionComponent
 
   @override
   void onTapDown(TapDownEvent event) {
-    game.overlays.add('PauseMenu');
+    game.showPauseMenu();
   }
 }

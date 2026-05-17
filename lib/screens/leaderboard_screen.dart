@@ -34,7 +34,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         ),
         title: const Text(
           'BẢNG XẾP HẠNG',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 2),
+          style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2),
         ),
         centerTitle: true,
       ),
@@ -59,11 +62,13 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: const Color(0xFF2E2C45),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFF5B4EC8), width: 1),
+                    border:
+                        Border.all(color: const Color(0xFF5B4EC8), width: 1),
                   ),
                   child: Row(
                     children: [
@@ -82,12 +87,14 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                       Expanded(
                         child: Text(
                           entry['name'] as String,
-                          style: const TextStyle(color: Colors.white, fontSize: 15),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 15),
                         ),
                       ),
                       Text(
                         'Level ${entry['level']}',
-                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                        style: const TextStyle(
+                            color: Colors.white54, fontSize: 12),
                       ),
                       const SizedBox(width: 12),
                       Text(

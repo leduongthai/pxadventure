@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame_audio/flame_audio.dart';
+import 'package:pixel_adventure/components/custom_hitbox.dart';
 import 'package:pixel_adventure/components/player.dart';
 import 'package:pixel_adventure/pixel_adventure.dart';
 
@@ -28,6 +29,7 @@ class Bunny extends SpriteAnimationGroupComponent
   static const _jumpSpeed = -200.0;
   static const _detectionRange = 100.0;
   final textureSize = Vector2(34, 44);
+  final hitbox = CustomHitbox(offsetX: 3, offsetY: 4, width: 28, height: 38);
 
   Vector2 velocity = Vector2.zero();
   double rangeNeg = 0;
@@ -47,7 +49,10 @@ class Bunny extends SpriteAnimationGroupComponent
   FutureOr<void> onLoad() {
     player = game.player;
     _groundY = position.y;
-    add(RectangleHitbox(position: Vector2(5, 6), size: Vector2(24, 36)));
+    add(RectangleHitbox(
+      position: hitbox.scaledPosition(size, textureSize),
+      size: hitbox.scaledSize(size, textureSize),
+    ));
     _loadAnimations();
     _calculateRange();
     return super.onLoad();
@@ -57,19 +62,26 @@ class Bunny extends SpriteAnimationGroupComponent
     animations = {
       _BunnyState.idle: SpriteAnimation.fromFrameData(
         game.images.fromCache('Enemies/Bunny/Idle (34x44).png'),
-        SpriteAnimationData.sequenced(amount: 7, stepTime: stepTime, textureSize: textureSize),
+        SpriteAnimationData.sequenced(
+            amount: 7, stepTime: stepTime, textureSize: textureSize),
       ),
       _BunnyState.run: SpriteAnimation.fromFrameData(
         game.images.fromCache('Enemies/Bunny/Run (34x44).png'),
-        SpriteAnimationData.sequenced(amount: 12, stepTime: stepTime, textureSize: textureSize),
+        SpriteAnimationData.sequenced(
+            amount: 12, stepTime: stepTime, textureSize: textureSize),
       ),
       _BunnyState.jump: SpriteAnimation.fromFrameData(
         game.images.fromCache('Enemies/Bunny/Jump.png'),
-        SpriteAnimationData.sequenced(amount: 1, stepTime: stepTime, textureSize: textureSize),
+        SpriteAnimationData.sequenced(
+            amount: 1, stepTime: stepTime, textureSize: textureSize),
       ),
       _BunnyState.hit: SpriteAnimation.fromFrameData(
         game.images.fromCache('Enemies/Bunny/Hit (34x44).png'),
-        SpriteAnimationData.sequenced(amount: 5, stepTime: stepTime, textureSize: textureSize, loop: false),
+        SpriteAnimationData.sequenced(
+            amount: 5,
+            stepTime: stepTime,
+            textureSize: textureSize,
+            loop: false),
       ),
     };
     current = _BunnyState.idle;
@@ -155,22 +167,32 @@ class Bunny extends SpriteAnimationGroupComponent
     } else {
       current = velocity.x != 0 ? _BunnyState.run : _BunnyState.idle;
     }
-    if ((moveDirection > 0 && scale.x > 0) || (moveDirection < 0 && scale.x < 0)) {
+    if ((moveDirection > 0 && scale.x > 0) ||
+        (moveDirection < 0 && scale.x < 0)) {
       flipHorizontallyAroundCenter();
     }
   }
 
   void collidedWithPlayer() async {
-    if (player.velocity.y > 0 && player.y + player.height > position.y) {
-      if (game.playSounds) FlameAudio.play('bounce.wav', volume: game.soundVolume);
+    if (_wasStompedByPlayer()) {
+      if (game.playSounds) {
+        FlameAudio.play('bounce.wav', volume: game.soundVolume);
+      }
       gotStomped = true;
       current = _BunnyState.hit;
       player.velocity.y = -_bounceHeight;
-      game.scoreManager.addEnemyKillScore();
+      player.killedEnemy();
       await animationTicker?.completed;
       removeFromParent();
     } else {
       player.collidedwithEnemy();
     }
+  }
+
+  bool _wasStompedByPlayer() {
+    final hitboxTop = y + hitbox.scaledTop(size, textureSize);
+    return player.velocity.y > 0 &&
+        player.hitboxBottom <= hitboxTop + 10 &&
+        player.hitboxTop < hitboxTop;
   }
 }

@@ -86,7 +86,8 @@ class FallingPlatform extends SpriteAnimationGroupComponent
     if (_triggered && !_isFalling) {
       _shakeTimer += dt;
       // Shake effect
-      position.x = _originalPosition.x + ((_shakeTimer * 20).floor() % 2 == 0 ? 1.5 : -1.5);
+      position.x = _originalPosition.x +
+          ((_shakeTimer * 20).floor() % 2 == 0 ? 1.5 : -1.5);
       collisionBlock?.position = position;
 
       if (_shakeTimer >= 0.5) {

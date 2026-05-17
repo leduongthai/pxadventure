@@ -21,7 +21,10 @@ class AchievementsScreen extends StatelessWidget {
         ),
         title: const Text(
           'THÀNH TÍCH',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 2),
+          style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2),
         ),
         centerTitle: true,
         actions: [
@@ -30,7 +33,10 @@ class AchievementsScreen extends StatelessWidget {
             child: Center(
               child: Text(
                 '$unlocked/$total',
-                style: const TextStyle(color: Color(0xFFFFD700), fontSize: 14, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Color(0xFFFFD700),
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -49,7 +55,8 @@ class AchievementsScreen extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: unlocked / total,
                     backgroundColor: const Color(0xFF2E2C45),
-                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
                     minHeight: 8,
                   ),
                 ),
@@ -95,7 +102,12 @@ class _AchievementTile extends StatelessWidget {
           width: 1.5,
         ),
         boxShadow: unlocked
-            ? [const BoxShadow(color: Color(0x33FFD700), blurRadius: 8, offset: Offset(0, 2))]
+            ? [
+                const BoxShadow(
+                    color: Color(0x33FFD700),
+                    blurRadius: 8,
+                    offset: Offset(0, 2))
+              ]
             : null,
       ),
       child: ListTile(
@@ -131,7 +143,8 @@ class _AchievementTile extends StatelessWidget {
         ),
         trailing: unlocked
             ? const Icon(Icons.check_circle, color: Color(0xFFFFD700), size: 24)
-            : const Icon(Icons.radio_button_unchecked, color: Colors.white12, size: 24),
+            : const Icon(Icons.radio_button_unchecked,
+                color: Colors.white12, size: 24),
       ),
     );
   }
@@ -146,7 +159,8 @@ class AchievementToast extends StatefulWidget {
   State<AchievementToast> createState() => _AchievementToastState();
 }
 
-class _AchievementToastState extends State<AchievementToast> with SingleTickerProviderStateMixin {
+class _AchievementToastState extends State<AchievementToast>
+    with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   late Animation<Offset> _slide;
   late Animation<double> _fade;
@@ -154,7 +168,8 @@ class _AchievementToastState extends State<AchievementToast> with SingleTickerPr
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 400));
     _slide = Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero)
         .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
     _fade = Tween<double>(begin: 0, end: 1).animate(_ctrl);
@@ -187,12 +202,15 @@ class _AchievementToastState extends State<AchievementToast> with SingleTickerPr
                 color: const Color(0xFF2E2C45),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: const Color(0xFFFFD700), width: 1.5),
-                boxShadow: const [BoxShadow(color: Color(0x66000000), blurRadius: 12)],
+                boxShadow: const [
+                  BoxShadow(color: Color(0x66000000), blurRadius: 12)
+                ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(widget.achievement.emoji, style: const TextStyle(fontSize: 24)),
+                  Text(widget.achievement.emoji,
+                      style: const TextStyle(fontSize: 24)),
                   const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,11 +218,17 @@ class _AchievementToastState extends State<AchievementToast> with SingleTickerPr
                     children: [
                       const Text(
                         '🏆 Thành Tích Mới!',
-                        style: TextStyle(color: Color(0xFFFFD700), fontSize: 10, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            color: Color(0xFFFFD700),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold),
                       ),
                       Text(
                         widget.achievement.title,
-                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),

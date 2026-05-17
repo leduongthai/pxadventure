@@ -9,7 +9,8 @@ class PlayerNameScreen extends StatefulWidget {
   State<PlayerNameScreen> createState() => _PlayerNameScreenState();
 }
 
-class _PlayerNameScreenState extends State<PlayerNameScreen> with SingleTickerProviderStateMixin {
+class _PlayerNameScreenState extends State<PlayerNameScreen>
+    with SingleTickerProviderStateMixin {
   final _ctrl = TextEditingController();
   final _focusNode = FocusNode();
   late AnimationController _animCtrl;
@@ -19,8 +20,11 @@ class _PlayerNameScreenState extends State<PlayerNameScreen> with SingleTickerPr
   @override
   void initState() {
     super.initState();
-    _ctrl.text = SaveManager.instance.getPlayerName() == 'Player' ? '' : SaveManager.instance.getPlayerName();
-    _animCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _ctrl.text = SaveManager.instance.getPlayerName() == 'Player'
+        ? ''
+        : SaveManager.instance.getPlayerName();
+    _animCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 600));
     _scaleAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.elasticOut);
     _animCtrl.forward();
     Future.delayed(const Duration(milliseconds: 300), () {
@@ -65,7 +69,10 @@ class _PlayerNameScreenState extends State<PlayerNameScreen> with SingleTickerPr
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: const Color(0xFF5B4EC8), width: 2),
                   boxShadow: const [
-                    BoxShadow(color: Color(0x665B4EC8), blurRadius: 24, offset: Offset(0, 8)),
+                    BoxShadow(
+                        color: Color(0x665B4EC8),
+                        blurRadius: 24,
+                        offset: Offset(0, 8)),
                   ],
                 ),
                 child: Column(
@@ -93,7 +100,10 @@ class _PlayerNameScreenState extends State<PlayerNameScreen> with SingleTickerPr
                       controller: _ctrl,
                       focusNode: _focusNode,
                       maxLength: 16,
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                       decoration: InputDecoration(
                         counterText: '',
@@ -101,19 +111,23 @@ class _PlayerNameScreenState extends State<PlayerNameScreen> with SingleTickerPr
                         hintStyle: const TextStyle(color: Colors.white24),
                         filled: true,
                         fillColor: const Color(0xFF1A1829),
-                        errorText: _hasError ? 'Tên không được để trống!' : null,
+                        errorText:
+                            _hasError ? 'Tên không được để trống!' : null,
                         errorStyle: const TextStyle(color: Color(0xFFFF6B6B)),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFF5B4EC8), width: 2),
+                          borderSide: const BorderSide(
+                              color: Color(0xFF5B4EC8), width: 2),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFF5B4EC8), width: 2),
+                          borderSide: const BorderSide(
+                              color: Color(0xFF5B4EC8), width: 2),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFF8B7CF8), width: 2.5),
+                          borderSide: const BorderSide(
+                              color: Color(0xFF8B7CF8), width: 2.5),
                         ),
                       ),
                       onChanged: (_) => setState(() => _hasError = false),
@@ -127,7 +141,8 @@ class _PlayerNameScreenState extends State<PlayerNameScreen> with SingleTickerPr
                         onPressed: _confirm,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF5B4EC8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                           elevation: 4,
                         ),
                         child: const Text(

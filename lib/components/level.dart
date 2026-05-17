@@ -38,8 +38,10 @@ class Level extends World with HasGameReference<PixelAdventure> {
   void _scrollingBackground() {
     final backgroundLayer = level.tileMap.getLayer('Background');
     if (backgroundLayer != null) {
-      final backgroundColor = backgroundLayer.properties.getValue('BackgroundColor');
-      final backgroundTile = BackgroundTile(color: backgroundColor ?? 'Gray', position: Vector2(0, 0));
+      final backgroundColor =
+          backgroundLayer.properties.getValue('BackgroundColor');
+      final backgroundTile = BackgroundTile(
+          color: backgroundColor ?? 'Gray', position: Vector2(0, 0));
       add(backgroundTile);
     }
   }
@@ -88,9 +90,14 @@ class Level extends World with HasGameReference<PixelAdventure> {
             break;
           case 'Checkpoint':
             if (identical(spawnPoint, _finishCheckpoint)) {
+              final checkpointSize =
+                  Vector2(spawnPoint.width, spawnPoint.height);
               add(Checkpoint(
-                position: Vector2(spawnPoint.x, spawnPoint.y),
-                size: Vector2(spawnPoint.width, spawnPoint.height),
+                position: _adjustCheckpointPosition(
+                  Vector2(spawnPoint.x, spawnPoint.y),
+                  checkpointSize,
+                ),
+                size: checkpointSize,
               ));
             }
             break;
@@ -239,7 +246,41 @@ class Level extends World with HasGameReference<PixelAdventure> {
     return adjusted;
   }
 
+  Vector2 _adjustCheckpointPosition(Vector2 position, Vector2 size) {
+    final adjusted = position.clone();
+    final bottom = position.y + size.y;
+    double? closestGroundTop;
+
+    for (final block in collisionBlocks) {
+      final horizontallyOverlaps =
+          adjusted.x < block.x + block.width && adjusted.x + size.x > block.x;
+      final groundTopInsideSprite = block.y >= adjusted.y && block.y <= bottom;
+
+      if (horizontallyOverlaps && groundTopInsideSprite) {
+        if (closestGroundTop == null || block.y < closestGroundTop) {
+          closestGroundTop = block.y;
+        }
+      }
+    }
+
+    if (closestGroundTop != null) {
+      adjusted.y = closestGroundTop - size.y;
+    }
+
+    return adjusted;
+  }
+
   void _addCollisions() {
+    final tileCollisionCount = _addTileCollisions();
+    if (tileCollisionCount > 0) {
+      return;
+    }
+
+    _addObjectCollisions();
+  }
+
+  int _addTileCollisions() {
+    var collisionCount = 0;
     final terrainLayer = level.tileMap.getLayer<TileLayer>('Background');
     if (terrainLayer != null && terrainLayer.data != null) {
       final data = terrainLayer.data!;
@@ -250,9 +291,8 @@ class Level extends World with HasGameReference<PixelAdventure> {
         var runStart = -1;
         var runIsPlatform = false;
         for (var x = 0; x <= terrainLayer.width; x++) {
-          final gid = x < terrainLayer.width
-              ? data[(y * terrainLayer.width) + x]
-              : 0;
+          final gid =
+              x < terrainLayer.width ? data[(y * terrainLayer.width) + x] : 0;
           final isSolid = _isSolidTile(gid);
           final isPlatform = _isOneWayPlatformTile(gid);
 
@@ -268,11 +308,28 @@ class Level extends World with HasGameReference<PixelAdventure> {
             );
             collisionBlocks.add(block);
             add(block);
+            collisionCount++;
             runStart = isSolid ? x : -1;
             runIsPlatform = isPlatform;
           }
         }
       }
+    }
+    return collisionCount;
+  }
+
+  void _addObjectCollisions() {
+    final collisionsLayer = level.tileMap.getLayer<ObjectGroup>('Collisions');
+    if (collisionsLayer == null) return;
+
+    for (final object in collisionsLayer.objects) {
+      final block = CollisionBlock(
+        position: Vector2(object.x, object.y),
+        size: Vector2(object.width, object.height),
+        isPlatform: object.class_ == 'Platform',
+      );
+      collisionBlocks.add(block);
+      add(block);
     }
   }
 

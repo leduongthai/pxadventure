@@ -18,20 +18,22 @@ class Fruit extends SpriteAnimationComponent
   }) : super(position: position, size: size);
 
   final double stepTime = 0.05;
-  final hitbox = CustomHitbox(offsetX: 10, offsetY: 10, width: 12, height: 12);
+  final hitbox = CustomHitbox(offsetX: 10, offsetY: 7, width: 12, height: 14);
+  final textureSize = Vector2.all(32);
   bool collected = false;
 
   @override
   FutureOr<void> onLoad() {
     priority = -1;
     add(RectangleHitbox(
-      position: Vector2(hitbox.offsetX, hitbox.offsetY),
-      size: Vector2(hitbox.width, hitbox.height),
+      position: hitbox.scaledPosition(size, textureSize),
+      size: hitbox.scaledSize(size, textureSize),
       collisionType: CollisionType.passive,
     ));
     animation = SpriteAnimation.fromFrameData(
       game.images.fromCache('Items/Fruits/$fruit.png'),
-      SpriteAnimationData.sequenced(amount: 17, stepTime: stepTime, textureSize: Vector2.all(32)),
+      SpriteAnimationData.sequenced(
+          amount: 17, stepTime: stepTime, textureSize: textureSize),
     );
     return super.onLoad();
   }
@@ -39,7 +41,9 @@ class Fruit extends SpriteAnimationComponent
   void collidedWithPlayer() async {
     if (!collected) {
       collected = true;
-      if (game.playSounds) FlameAudio.play('collect_fruit.wav', volume: game.soundVolume);
+      if (game.playSounds) {
+        FlameAudio.play('collect_fruit.wav', volume: game.soundVolume);
+      }
 
       // Update score + achievements
       ScoreManager.instance.addFruitScore(fruit);
@@ -50,7 +54,7 @@ class Fruit extends SpriteAnimationComponent
         SpriteAnimationData.sequenced(
           amount: 6,
           stepTime: stepTime,
-          textureSize: Vector2.all(32),
+          textureSize: textureSize,
           loop: false,
         ),
       );

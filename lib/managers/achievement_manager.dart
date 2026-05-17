@@ -1,16 +1,16 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum AchievementId {
-  firstBlood,      // Chết lần đầu
-  fruitCollector,  // Thu 10 trái cây
-  fruitMaster,     // Thu 50 trái cây
-  speedRunner,     // Hoàn thành level không chết
-  explorer,        // Mở khóa 5 màn
-  veteran,         // Mở khóa tất cả màn
-  killer,          // Tiêu diệt 10 kẻ thù
-  highScorer,      // Đạt 500 điểm 1 màn
-  checkpoint,      // Dùng checkpoint lần đầu
-  completeGame,    // Hoàn thành tất cả 11 màn
+  firstBlood, // Chết lần đầu
+  fruitCollector, // Thu 10 trái cây
+  fruitMaster, // Thu 50 trái cây
+  speedRunner, // Hoàn thành level không chết
+  explorer, // Mở khóa 5 màn
+  veteran, // Mở khóa tất cả màn
+  killer, // Tiêu diệt 10 kẻ thù
+  highScorer, // Đạt 500 điểm 1 màn
+  checkpoint, // Dùng checkpoint lần đầu
+  completeGame, // Hoàn thành tất cả 11 màn
 }
 
 class Achievement {
@@ -146,12 +146,17 @@ class AchievementManager {
     if (_totalKills >= 10) await _unlock(AchievementId.killer);
   }
 
-  Future<void> recordLevelComplete(int deathCount, int score, int unlockedLevels) async {
+  Future<void> recordLevelComplete({
+    required int completedLevel,
+    required int deathCount,
+    required int score,
+    required int unlockedLevels,
+  }) async {
     if (deathCount == 0) await _unlock(AchievementId.speedRunner);
     if (score >= 500) await _unlock(AchievementId.highScorer);
     if (unlockedLevels >= 5) await _unlock(AchievementId.explorer);
     if (unlockedLevels >= 11) await _unlock(AchievementId.veteran);
-    if (unlockedLevels > 11) await _unlock(AchievementId.completeGame);
+    if (completedLevel >= 11) await _unlock(AchievementId.completeGame);
   }
 
   Future<void> recordCheckpoint() async {
