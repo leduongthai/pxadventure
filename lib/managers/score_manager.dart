@@ -8,6 +8,8 @@ class ScoreManager {
   int totalFruitCollected = 0;
   int totalFruitsInLevel = 0;
   int deathCount = 0;
+  bool bossKilled = false;
+  bool levelHasBoss = false;
 
   static const Map<String, int> _fruitScores = {
     'Apple': 10,
@@ -25,6 +27,8 @@ class ScoreManager {
     totalFruitCollected = 0;
     totalFruitsInLevel = 0;
     deathCount = 0;
+    bossKilled = false;
+    levelHasBoss = false;
   }
 
   void setLevelFruitTotal(int total) {
@@ -67,12 +71,20 @@ class ScoreManager {
   }
 
   int calculateStars() {
-    if (totalFruitsInLevel == 0) return 1;
-    final collectedAllFruits = totalFruitCollected >= totalFruitsInLevel;
-    final collectedHalfFruits =
-        totalFruitCollected >= (totalFruitsInLevel / 2).ceil();
+    if (totalFruitsInLevel == 0 && !levelHasBoss) return 1;
 
-    if (collectedAllFruits && deathCount == 0) return 3;
+    // Logic mới của bạn:
+    // Nếu màn có Boss mà không diệt được Boss -> tối đa 2 sao
+    if (levelHasBoss && !bossKilled) {
+      final collectedHalfFruits = totalFruitCollected >= (totalFruitsInLevel / 2).ceil();
+      return collectedHalfFruits ? 2 : 1;
+    }
+
+    // Nếu diệt được Boss (hoặc màn không có Boss), tính theo tiêu chuẩn cũ
+    final collectedAllFruits = totalFruitCollected >= totalFruitsInLevel;
+    final collectedHalfFruits = totalFruitCollected >= (totalFruitsInLevel / 2).ceil();
+
+    if (collectedAllFruits && deathCount <= 2) return 3; // Cho phép chết 1-2 mạng vẫn được 3 sao nếu diệt Boss
     if (collectedHalfFruits) return 2;
     return 1;
   }

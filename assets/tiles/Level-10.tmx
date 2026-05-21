@@ -84,7 +84,13 @@
   <object id="17" type="FallingPlatform" x="160" y="192" width="32" height="10" />
   <object id="18" type="FallingPlatform" x="480" y="168" width="32" height="10" />
   <object id="19" type="Checkpoint" x="704" y="192" width="64" height="64" />
-  
+  <object id="20" name="Boss" type="Boss" x="340" y="146" width="36" height="30">
+   <properties>
+    <property name="offNeg" type="float" value="3.5"/>
+    <property name="offPos" type="float" value="4.5"/>
+   </properties>
+  </object>
+
  </objectgroup>
  <objectgroup id="3" name="Collisions">
   <object id="30" x="48" y="48" width="16" height="272" />

@@ -7,6 +7,7 @@ import 'package:pixel_adventure/components/checkpoint.dart';
 import 'package:pixel_adventure/components/chicken.dart';
 import 'package:pixel_adventure/components/collision_block.dart';
 import 'package:pixel_adventure/components/enemies/blue_bird.dart';
+import 'package:pixel_adventure/components/enemies/boss_big.dart';
 import 'package:pixel_adventure/components/enemies/bunny.dart';
 import 'package:pixel_adventure/components/enemies/mushroom.dart';
 import 'package:pixel_adventure/components/fruit.dart';
@@ -41,7 +42,10 @@ class Level extends World with HasGameReference<PixelAdventure> {
       final backgroundColor =
           backgroundLayer.properties.getValue('BackgroundColor');
       final backgroundTile = BackgroundTile(
-          color: backgroundColor ?? 'Gray', position: Vector2(0, 0));
+        color: backgroundColor ?? 'Gray',
+        position: Vector2(0, 0),
+      );
+      backgroundTile.size = level.size; // Đặt kích thước background bằng đúng kích thước map
       add(backgroundTile);
     }
   }
@@ -149,6 +153,24 @@ class Level extends World with HasGameReference<PixelAdventure> {
               offNeg: offNeg ?? 0,
               offPos: offPos ?? 0,
             ));
+            break;
+          case 'Boss':
+            try {
+              game.scoreManager.levelHasBoss = true; // Đánh dấu màn này có Boss
+              final offNeg = spawnPoint.properties.getValue('offNeg');
+              final offPos = spawnPoint.properties.getValue('offPos');
+              add(BossPig(
+                position: _adjustSolidPosition(
+                  Vector2(spawnPoint.x, spawnPoint.y),
+                  Vector2(spawnPoint.width, spawnPoint.height),
+                ),
+                size: Vector2(spawnPoint.width, spawnPoint.height),
+                offNeg: offNeg is num ? offNeg.toDouble() : 0.0,
+                offPos: offPos is num ? offPos.toDouble() : 0.0,
+              ));
+            } catch (e) {
+              print('Error loading Boss: $e');
+            }
             break;
           case 'FallingPlatform':
             final platformBlock = CollisionBlock(

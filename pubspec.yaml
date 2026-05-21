@@ -43,6 +43,7 @@ flutter:
     - assets/images/Enemies/Bunny/
     - assets/images/Enemies/BlueBird/
     - assets/images/Enemies/Mushroom/
+    - assets/images/Enemies/AngryPig/
     - assets/images/Menu/
     - assets/images/Menu/Levels/
     - assets/images/Other/

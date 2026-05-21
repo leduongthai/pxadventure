@@ -28,6 +28,7 @@ enum PlayerState {
   hit,
   appearing,
   disappearing,
+  dashing,
 }
 
 class Player extends SpriteAnimationGroupComponent
@@ -59,6 +60,11 @@ class Player extends SpriteAnimationGroupComponent
   final int maxJumpCount = 2;
   bool gotHit = false;
   bool reachedCheckpoint = false;
+  bool isDashing = false;
+  bool canDash = true;
+  double dashSpeed = 450;
+  double dashDuration = 0.15;
+  double dashCooldown = 0.6;
   List<CollisionBlock> collisionBlocks = [];
   CustomHitbox hitbox =
       CustomHitbox(offsetX: 10, offsetY: 4, width: 14, height: 28);
@@ -101,7 +107,6 @@ class Player extends SpriteAnimationGroupComponent
 
   @override
   bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
-    // Đã đổi RawKeyEvent -> KeyEvent
     horizontalMovement = 0;
 
     final isLeftKeyPressed = keysPressed.contains(LogicalKeyboardKey.keyA) ||
@@ -123,7 +128,37 @@ class Player extends SpriteAnimationGroupComponent
       _jumpInputHeld = false;
     }
 
+    // Nhấn phím Shift hoặc L để Dash
+    if (event is KeyDownEvent &&
+        (event.logicalKey == LogicalKeyboardKey.shiftLeft ||
+            event.logicalKey == LogicalKeyboardKey.keyL)) {
+      _dash();
+    }
+
     return super.onKeyEvent(event, keysPressed);
+  }
+
+  void _dash() {
+    if (!canDash || isDashing || gotHit || reachedCheckpoint) return;
+
+    isDashing = true;
+    canDash = false;
+    if (game.playSounds) FlameAudio.play('jump.wav', volume: game.soundVolume * 0.5);
+
+    // Lưu lại vận tốc y để lướt ngang không bị rơi
+    double oldGravity = velocity.y;
+    velocity.y = 0;
+
+    // Thời gian lướt
+    Future.delayed(Duration(milliseconds: (dashDuration * 1000).toInt()), () {
+      isDashing = false;
+      velocity.y = oldGravity;
+    });
+
+    // Thời gian hồi chiêu
+    Future.delayed(Duration(milliseconds: (dashCooldown * 1000).toInt()), () {
+      canDash = true;
+    });
   }
 
   @override
@@ -191,16 +226,28 @@ class Player extends SpriteAnimationGroupComponent
     } else if (velocity.x > 0 && scale.x < 0) {
       flipHorizontallyAroundCenter();
     }
-    if (velocity.x > 0 || velocity.x < 0) playerState = PlayerState.running;
-    if (velocity.y > 0) playerState = PlayerState.falling;
-    if (velocity.y < 0) {
-      playerState =
-          jumpCount > 1 ? PlayerState.doubleJumping : PlayerState.jumping;
+
+    if (isDashing) {
+      playerState = PlayerState.running; // Dùng tạm animation chạy hoặc thêm hiệu ứng sau
+    } else {
+      if (velocity.x > 0 || velocity.x < 0) playerState = PlayerState.running;
+      if (velocity.y > 0) playerState = PlayerState.falling;
+      if (velocity.y < 0) {
+        playerState =
+            jumpCount > 1 ? PlayerState.doubleJumping : PlayerState.jumping;
+      }
     }
     current = playerState;
   }
 
   void _updatePlayerMovement(double dt) {
+    if (isDashing) {
+      // Khi đang lướt, tốc độ sẽ là dashSpeed theo hướng đang nhìn
+      velocity.x = (scale.x > 0 ? 1 : -1) * dashSpeed;
+      position.x += velocity.x * dt;
+      return; // Không nhận input di chuyển khác khi đang dash
+    }
+
     if (hasJumped && (isOnGround || jumpCount < maxJumpCount)) {
       _playerJump(dt);
     }
