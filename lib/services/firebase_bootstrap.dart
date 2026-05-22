@@ -8,11 +8,12 @@ class FirebaseBootstrap {
   static bool initialized = false;
   static String? lastError;
 
-  static Future<void> initialize() async {
+  static Future<bool> initialize() async {
     final options = DefaultFirebaseOptions.currentPlatformOrNull;
     if (options == null) {
       lastError = 'Firebase .env config is incomplete.';
-      return;
+      initialized = false;
+      return false;
     }
 
     try {
@@ -21,11 +22,13 @@ class FirebaseBootstrap {
       }
       initialized = true;
       lastError = null;
+      return true;
     } catch (error, stackTrace) {
       initialized = false;
       lastError = error.toString();
       debugPrint('Firebase initialization failed: $error');
       debugPrintStack(stackTrace: stackTrace);
+      return false;
     }
   }
 }

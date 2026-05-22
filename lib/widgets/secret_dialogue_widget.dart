@@ -54,32 +54,18 @@ class _SecretDialogueWidgetState extends State<SecretDialogueWidget> {
 
     setState(() {
       _thinking = true;
-      _npcText = 'Để ta xem thái độ của ngài...';
+      _npcText = 'Để ta nghe xem lòng ngài thật sự ra sao...';
     });
 
     final result = await _gemini.evaluate(message);
     if (!mounted) return;
 
-    final fallbackNote = result.usedFallback
-        ? ' Ta đang dùng đánh giá offline (${result.fallbackCause}).'
-        : '';
-    if (result.score <= 3) {
-      setState(() {
-        _thinking = false;
-        _resolved = true;
-        _npcText =
-            'Điểm thái độ: ${result.score}/5. ${result.reason}$fallbackNote Boss sẽ xuất hiện.';
-      });
-      _resolveAfterDelay(_aiResultReadDelay, passed: false);
-    } else {
-      setState(() {
-        _thinking = false;
-        _resolved = true;
-        _npcText =
-            'Điểm thái độ: ${result.score}/5. ${result.reason}$fallbackNote Ta cho ngài qua màn.';
-      });
-      _resolveAfterDelay(_aiResultReadDelay, passed: true);
-    }
+    setState(() {
+      _thinking = false;
+      _resolved = true;
+      _npcText = result.reason;
+    });
+    _resolveAfterDelay(_aiResultReadDelay, passed: result.score > 3);
   }
 
   @override

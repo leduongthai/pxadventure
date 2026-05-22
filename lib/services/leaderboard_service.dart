@@ -11,44 +11,76 @@ class LeaderboardService {
   static final LeaderboardService instance = LeaderboardService._internal();
 
   static const _collectionName = 'leaderboard';
+  static const _cloudTimeout = Duration(seconds: 20);
+  static const _retryDelay = Duration(milliseconds: 800);
+
   String? _lastCloudError;
+  String? _lastCloudErrorCode;
+  bool _usedLocalFallback = false;
 
   bool get isCloudEnabled => Firebase.apps.isNotEmpty;
+  bool get isCloudHealthy => isCloudEnabled && _lastCloudError == null;
+  bool get usedLocalFallback => _usedLocalFallback;
   String? get lastCloudError => _lastCloudError;
 
   String get cloudStatus {
     if (!isCloudEnabled) {
-      return FirebaseBootstrap.lastError ?? 'Firebase chưa được khởi tạo.';
+      final configError = FirebaseBootstrap.lastError;
+      if (configError != null) {
+        return 'Firebase chưa kết nối, đang dùng dữ liệu local.';
+      }
+      return 'Firebase chưa được cấu hình, đang dùng dữ liệu local.';
     }
+
+    if (_lastCloudErrorCode == 'permission-denied') {
+      return 'Firestore chưa cho phép đọc/ghi, đang dùng dữ liệu local.';
+    }
+
     if (_lastCloudError != null) {
-      return 'Firebase đã khởi tạo nhưng Firestore lỗi: $_lastCloudError';
+      return 'Firebase phản hồi chậm, đang hiển thị dữ liệu local.';
     }
+
+    if (_usedLocalFallback) {
+      return 'Firebase đã kết nối, hiện chưa có dữ liệu cloud.';
+    }
+
     return 'Firebase đã kết nối.';
   }
 
   Future<List<Map<String, dynamic>>> getLeaderboard() async {
-    if (!isCloudEnabled) {
+    if (!await _ensureCloudReady()) {
+      _usedLocalFallback = true;
       return SaveManager.instance.getLeaderboard();
     }
 
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection(_collectionName)
-          .orderBy('score', descending: true)
-          .limit(10)
-          .get()
-          .timeout(const Duration(seconds: 8));
+      final snapshot = await _runCloudRequest(
+        () => FirebaseFirestore.instance
+            .collection(_collectionName)
+            .orderBy('score', descending: true)
+            .limit(10)
+            .get(),
+      );
 
       final remoteEntries = snapshot.docs
           .map((doc) => _entryFromFirestore(doc.data()))
           .where((entry) => (entry['score'] as int) > 0)
           .toList();
 
-      _lastCloudError = null;
-      if (remoteEntries.isNotEmpty) return remoteEntries;
-    } catch (error) {
-      _lastCloudError = error.toString();
+      _clearCloudError();
+      if (remoteEntries.isNotEmpty) {
+        _usedLocalFallback = false;
+        return remoteEntries;
+      }
+
+      _usedLocalFallback = true;
+    } catch (error, stackTrace) {
+      _rememberCloudError(error);
+      _usedLocalFallback = true;
       debugPrint('Cloud leaderboard read failed: $_lastCloudError');
+      if (kDebugMode) {
+        debugPrintStack(stackTrace: stackTrace);
+      }
     }
 
     return SaveManager.instance.getLeaderboard();
@@ -57,20 +89,91 @@ class LeaderboardService {
   Future<void> addLeaderboardEntry(String name, int score, int level) async {
     await SaveManager.instance.addLeaderboardEntry(name, score, level);
 
-    if (!isCloudEnabled) return;
+    if (!await _ensureCloudReady()) return;
 
     try {
-      await FirebaseFirestore.instance.collection(_collectionName).add({
-        'name': _sanitizeName(name),
-        'score': score,
-        'level': level,
-        'createdAt': FieldValue.serverTimestamp(),
-      }).timeout(const Duration(seconds: 8));
-      _lastCloudError = null;
-    } catch (error) {
-      _lastCloudError = error.toString();
+      await _runCloudRequest(
+        () => FirebaseFirestore.instance.collection(_collectionName).add({
+          'name': _sanitizeName(name),
+          'score': score,
+          'level': level,
+          'createdAt': FieldValue.serverTimestamp(),
+        }),
+        retry: false,
+      );
+      _clearCloudError();
+    } catch (error, stackTrace) {
+      _rememberCloudError(error);
       debugPrint('Cloud leaderboard write failed: $_lastCloudError');
+      if (kDebugMode) {
+        debugPrintStack(stackTrace: stackTrace);
+      }
     }
+  }
+
+  Future<bool> _ensureCloudReady() async {
+    if (isCloudEnabled) return true;
+    return FirebaseBootstrap.initialize();
+  }
+
+  Future<T> _runCloudRequest<T>(
+    Future<T> Function() request, {
+    bool retry = true,
+  }) async {
+    try {
+      return await request().timeout(_cloudTimeout);
+    } catch (error) {
+      if (!retry || !_isRetryableCloudError(error)) {
+        rethrow;
+      }
+
+      await Future<void>.delayed(_retryDelay);
+      return request().timeout(_cloudTimeout);
+    }
+  }
+
+  bool _isRetryableCloudError(Object error) {
+    if (error is TimeoutException) return true;
+    if (error is FirebaseException) {
+      return const {
+        'aborted',
+        'cancelled',
+        'deadline-exceeded',
+        'internal',
+        'unavailable',
+        'unknown',
+      }.contains(error.code);
+    }
+    return false;
+  }
+
+  void _clearCloudError() {
+    _lastCloudError = null;
+    _lastCloudErrorCode = null;
+  }
+
+  void _rememberCloudError(Object error) {
+    _lastCloudError = _formatCloudError(error);
+    if (error is TimeoutException) {
+      _lastCloudErrorCode = 'timeout';
+    } else if (error is FirebaseException) {
+      _lastCloudErrorCode = error.code;
+    } else {
+      _lastCloudErrorCode = null;
+    }
+  }
+
+  String _formatCloudError(Object error) {
+    if (error is TimeoutException) {
+      return 'Firestore timeout after ${_cloudTimeout.inSeconds}s';
+    }
+    if (error is FirebaseException) {
+      final message = error.message;
+      return message == null || message.trim().isEmpty
+          ? error.code
+          : '${error.code}: $message';
+    }
+    return error.toString();
   }
 
   Map<String, dynamic> _entryFromFirestore(Map<String, dynamic> data) {

@@ -36,7 +36,7 @@ class GeminiAttitudeService {
     if (_apiKey.trim().isEmpty) {
       return _fallbackEvaluate(
         message,
-        fallbackCause: 'chưa có GEMINI_API_KEY trong .env',
+        fallbackCause: 'missing GEMINI_API_KEY',
       );
     }
 
@@ -59,9 +59,9 @@ class GeminiAttitudeService {
                     {
                       'text': '''
 Bạn là NPC giữ cổng của một màn chơi bí mật trong game platformer.
-Hãy đánh giá thái độ của người chơi dựa trên tin nhắn sau.
+Hãy đánh giá thái độ của người chơi dựa trên tin nhắn sau, rồi trả lời như chính NPC đang nói trực tiếp với người chơi.
 
-Luật chấm điểm:
+Luật chấm điểm nội bộ:
 1 = xúc phạm rõ ràng, chửi thề, toxic, công kích game/NPC/người khác.
 2 = cộc lốc, khó chịu, thiếu tôn trọng, ra lệnh.
 3 = trung tính nhưng chưa thân thiện.
@@ -74,8 +74,14 @@ Quy tắc bắt buộc:
 - Câu chê kiểu "game như cc", "map như cc", "boss như cc" phải là 1/5.
 - Không được chấm 3 cho câu có từ tục, kể cả câu đó ngắn hoặc viết tắt.
 
+Quy tắc lời thoại:
+- "reason" phải là một câu NPC nói tự nhiên, không phải lời giải thích hệ thống.
+- Không nhắc đến điểm số, thang điểm, AI, Gemini, API, offline, lỗi, đánh giá, hoặc JSON.
+- Nếu score <= 3, lời thoại nên thể hiện NPC không hài lòng và sắp thử thách người chơi.
+- Nếu score >= 4, lời thoại nên thể hiện NPC hài lòng và cho người chơi đi tiếp.
+
 Chỉ trả về JSON hợp lệ đúng dạng:
-{"score":1,"reason":"ngắn gọn bằng tiếng Việt"}
+{"score":4,"reason":"Nghe có vẻ ngài thật sự đã trưởng thành. Ta cho ngài đi tiếp."}
 
 Tin nhắn người chơi: "$message"
 ''',
@@ -84,7 +90,7 @@ Tin nhắn người chơi: "$message"
                 },
               ],
               'generationConfig': {
-                'temperature': 0,
+                'temperature': 0.4,
                 'responseMimeType': 'application/json',
               },
             }),
@@ -94,7 +100,7 @@ Tin nhắn người chơi: "$message"
       if (response.statusCode < 200 || response.statusCode >= 300) {
         return _fallbackEvaluate(
           message,
-          fallbackCause: _httpFailureCause(response.statusCode),
+          fallbackCause: 'HTTP ${response.statusCode}',
         );
       }
 
@@ -114,27 +120,14 @@ Tin nhắn người chơi: "$message"
       return _parseGeminiText(text) ??
           _fallbackEvaluate(
             message,
-            fallbackCause: 'Gemini trả về dữ liệu không đọc được',
+            fallbackCause: 'unreadable Gemini response',
           );
     } catch (error) {
       return _fallbackEvaluate(
         message,
-        fallbackCause: 'không gọi được Gemini: ${error.runtimeType}',
+        fallbackCause: error.runtimeType.toString(),
       );
     }
-  }
-
-  String _httpFailureCause(int statusCode) {
-    if (statusCode == 429) {
-      return 'Gemini báo quá quota hoặc quá nhiều request (HTTP 429)';
-    }
-    if (statusCode == 403) {
-      return 'Gemini từ chối key hoặc API chưa được cấp quyền (HTTP 403)';
-    }
-    if (statusCode == 400) {
-      return 'request gửi tới Gemini chưa hợp lệ (HTTP 400)';
-    }
-    return 'Gemini trả lỗi HTTP $statusCode';
   }
 
   AttitudeResult? _hardToxicityCheck(String message) {
@@ -150,7 +143,7 @@ Tin nhắn người chơi: "$message"
     if (severePatterns.any((pattern) => pattern.hasMatch(normalized))) {
       return const AttitudeResult(
         score: 1,
-        reason: 'Tin nhắn có từ chửi hoặc xúc phạm rõ ràng.',
+        reason: 'Mày nói vậy là muốn gặp anh tao rồi đó.',
       );
     }
 
@@ -162,7 +155,7 @@ Tin nhắn người chơi: "$message"
     if (rudePatterns.any((pattern) => pattern.hasMatch(normalized))) {
       return const AttitudeResult(
         score: 2,
-        reason: 'Tin nhắn thiếu tôn trọng nên NPC không hài lòng.',
+        reason: 'Nói chuyện kiểu đó thì ta không cho qua dễ vậy đâu.',
       );
     }
 
@@ -173,15 +166,11 @@ Tin nhắn người chơi: "$message"
     try {
       final decoded = jsonDecode(text.trim()) as Map<String, dynamic>;
       final score = (decoded['score'] as num).round().clamp(1, 5);
-      final reason = decoded['reason']?.toString() ?? 'Đã đánh giá thái độ.';
+      final reason = decoded['reason']?.toString().trim();
+      if (reason == null || reason.isEmpty) return null;
       return AttitudeResult(score: score, reason: reason);
     } catch (_) {
-      final scoreMatch = RegExp(r'[1-5]').firstMatch(text);
-      if (scoreMatch == null) return null;
-      return AttitudeResult(
-        score: int.parse(scoreMatch.group(0)!),
-        reason: 'Gemini trả về định dạng tự do, đã đọc điểm từ phản hồi.',
-      );
+      return null;
     }
   }
 
@@ -209,7 +198,7 @@ Tin nhắn người chơi: "$message"
     if (kindWords.any(lower.contains)) {
       return AttitudeResult(
         score: 4,
-        reason: 'Tin nhắn lịch sự nên NPC cho qua.',
+        reason: 'Nghe cũng có thành ý đấy. Ta cho ngài đi tiếp.',
         usedFallback: true,
         fallbackCause: fallbackCause,
       );
@@ -217,7 +206,7 @@ Tin nhắn người chơi: "$message"
 
     return AttitudeResult(
       score: 3,
-      reason: 'Tin nhắn trung tính, NPC vẫn muốn thử thách bạn.',
+      reason: 'Câu trả lời đó chưa đủ làm ta tin. Chứng minh bằng sức mạnh đi.',
       usedFallback: true,
       fallbackCause: fallbackCause,
     );

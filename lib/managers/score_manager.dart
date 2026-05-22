@@ -10,6 +10,10 @@ class ScoreManager {
   int deathCount = 0;
   bool bossKilled = false;
   bool levelHasBoss = false;
+  bool secretClearBonusAwarded = false;
+
+  static const secretDialogueClearScore = 1000;
+  static const secretBossClearScore = 2000;
 
   static const Map<String, int> _fruitScores = {
     'Apple': 10,
@@ -29,6 +33,7 @@ class ScoreManager {
     deathCount = 0;
     bossKilled = false;
     levelHasBoss = false;
+    secretClearBonusAwarded = false;
   }
 
   void setLevelFruitTotal(int total) {
@@ -50,6 +55,20 @@ class ScoreManager {
 
   void addBossKillScore() {
     currentScore += 250;
+  }
+
+  void addSecretDialogueClearScore() {
+    _addSecretClearScore(secretDialogueClearScore);
+  }
+
+  void addSecretBossClearScore() {
+    _addSecretClearScore(secretBossClearScore);
+  }
+
+  void _addSecretClearScore(int score) {
+    if (secretClearBonusAwarded) return;
+    currentScore += score;
+    secretClearBonusAwarded = true;
   }
 
   void applyTimeBonusScore(int secondsRemaining) {

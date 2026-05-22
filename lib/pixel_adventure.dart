@@ -144,7 +144,7 @@ class PixelAdventure extends FlameGame
   Future<void> loadNextLevel() async {
     if (_levelCompleteVisible) return;
 
-    final completedLevel = currentLevelIndex + 1;
+    final completedLevel = displayedLevelNumber;
     final earnedStars = scoreManager.calculateStars();
     if (secretRun) {
       lastSkillPointsEarned = 0;
@@ -154,7 +154,17 @@ class PixelAdventure extends FlameGame
       lastSkillPointsEarned = newSkillPoints > 0 ? newSkillPoints : 0;
     }
 
-    if (!secretRun) {
+    if (secretRun) {
+      await scoreManager.saveHighScore(
+        completedLevel,
+        scoreManager.currentScore,
+      );
+      await LeaderboardService.instance.addLeaderboardEntry(
+        SaveManager.instance.getPlayerName(),
+        scoreManager.currentScore,
+        completedLevel,
+      );
+    } else {
       await scoreManager.saveHighScore(
         completedLevel,
         scoreManager.currentScore,
@@ -260,6 +270,7 @@ class PixelAdventure extends FlameGame
     _secretDialogueVisible = false;
 
     if (passed) {
+      scoreManager.addSecretDialogueClearScore();
       unawaited(loadNextLevel());
       return;
     }

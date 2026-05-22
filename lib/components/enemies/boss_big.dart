@@ -332,7 +332,11 @@ class BossPig extends SpriteAnimationGroupComponent
     isDead = true;
     current = BossState.hit;
     game.scoreManager.bossKilled = true;
-    game.scoreManager.addBossKillScore();
+    if (game.secretRun) {
+      game.scoreManager.addSecretBossClearScore();
+    } else {
+      game.scoreManager.addBossKillScore();
+    }
 
     for (var i = 0; i < 5; i++) {
       opacity = 0;

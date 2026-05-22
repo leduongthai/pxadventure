@@ -11,6 +11,7 @@ class LeaderboardScreen extends StatefulWidget {
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
   List<Map<String, dynamic>> _entries = [];
   bool _loading = true;
+  bool _cloudHealthy = false;
   String _cloudStatus = '';
 
   @override
@@ -20,11 +21,17 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   }
 
   Future<void> _load() async {
+    setState(() {
+      _loading = true;
+    });
+
     final entries = await LeaderboardService.instance.getLeaderboard();
     if (!mounted) return;
+
     setState(() {
       _entries = entries;
       _cloudStatus = LeaderboardService.instance.cloudStatus;
+      _cloudHealthy = LeaderboardService.instance.isCloudHealthy;
       _loading = false;
     });
   }
@@ -47,11 +54,18 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             letterSpacing: 2,
           ),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Tải lại',
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: _load,
+          ),
+        ],
         centerTitle: true,
       ),
       body: Column(
         children: [
-          _CloudStatusBanner(status: _cloudStatus),
+          _CloudStatusBanner(status: _cloudStatus, healthy: _cloudHealthy),
           Expanded(child: _buildBody()),
         ],
       ),
@@ -138,30 +152,45 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
 class _CloudStatusBanner extends StatelessWidget {
   final String status;
+  final bool healthy;
 
-  const _CloudStatusBanner({required this.status});
+  const _CloudStatusBanner({
+    required this.status,
+    required this.healthy,
+  });
 
   @override
   Widget build(BuildContext context) {
     if (status.isEmpty) return const SizedBox.shrink();
 
-    final connected = status == 'Firebase đã kết nối.';
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: connected ? const Color(0xFF123E32) : const Color(0xFF3A2D18),
+        color: healthy ? const Color(0xFF123E32) : const Color(0xFF3A2D18),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: connected ? const Color(0xFF4ECDC4) : const Color(0xFFFFD166),
+          color: healthy ? const Color(0xFF4ECDC4) : const Color(0xFFFFD166),
         ),
       ),
-      child: Text(
-        status,
-        style: const TextStyle(color: Colors.white70, fontSize: 12),
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
+      child: Row(
+        children: [
+          Icon(
+            healthy ? Icons.cloud_done : Icons.cloud_off,
+            color: healthy ? const Color(0xFF4ECDC4) : const Color(0xFFFFD166),
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              status,
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }

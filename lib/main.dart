@@ -13,10 +13,13 @@ import 'package:pixel_adventure/screens/main_menu_screen.dart';
 import 'package:pixel_adventure/screens/player_name_screen.dart';
 import 'package:pixel_adventure/screens/skill_tree_screen.dart';
 import 'package:pixel_adventure/services/firebase_bootstrap.dart';
+import 'package:pixel_adventure/services/firebase_web_plugin_registrant_stub.dart'
+    if (dart.library.html) 'package:pixel_adventure/services/firebase_web_plugin_registrant_web.dart';
 import 'package:pixel_adventure/services/progress_unlock_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  registerFirebaseWebPlugins();
   await dotenv.load(fileName: '.env', isOptional: true);
   await FirebaseBootstrap.initialize();
 
