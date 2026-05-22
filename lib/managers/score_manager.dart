@@ -48,6 +48,10 @@ class ScoreManager {
     currentScore += 50;
   }
 
+  void addBossKillScore() {
+    currentScore += 250;
+  }
+
   void applyTimeBonusScore(int secondsRemaining) {
     currentScore += secondsRemaining * 5;
   }
@@ -76,15 +80,19 @@ class ScoreManager {
     // Logic mới của bạn:
     // Nếu màn có Boss mà không diệt được Boss -> tối đa 2 sao
     if (levelHasBoss && !bossKilled) {
-      final collectedHalfFruits = totalFruitCollected >= (totalFruitsInLevel / 2).ceil();
+      final collectedHalfFruits =
+          totalFruitCollected >= (totalFruitsInLevel / 2).ceil();
       return collectedHalfFruits ? 2 : 1;
     }
 
     // Nếu diệt được Boss (hoặc màn không có Boss), tính theo tiêu chuẩn cũ
     final collectedAllFruits = totalFruitCollected >= totalFruitsInLevel;
-    final collectedHalfFruits = totalFruitCollected >= (totalFruitsInLevel / 2).ceil();
+    final collectedHalfFruits =
+        totalFruitCollected >= (totalFruitsInLevel / 2).ceil();
 
-    if (collectedAllFruits && deathCount <= 2) return 3; // Cho phép chết 1-2 mạng vẫn được 3 sao nếu diệt Boss
+    if (collectedAllFruits && deathCount <= 2) {
+      return 3; // Cho phép chết 1-2 mạng vẫn được 3 sao nếu diệt Boss
+    }
     if (collectedHalfFruits) return 2;
     return 1;
   }
@@ -101,5 +109,20 @@ class ScoreManager {
   Future<int> getBestStars(int level) async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt('stars_level_$level') ?? 0;
+  }
+
+  Future<bool> hasThreeStarsEveryLevel(int totalLevels) async {
+    for (var level = 1; level <= totalLevels; level++) {
+      if (await getBestStars(level) < 3) return false;
+    }
+    return true;
+  }
+
+  Future<int> completedLevelCount(int totalLevels) async {
+    var completed = 0;
+    for (var level = 1; level <= totalLevels; level++) {
+      if (await getBestStars(level) > 0) completed++;
+    }
+    return completed;
   }
 }

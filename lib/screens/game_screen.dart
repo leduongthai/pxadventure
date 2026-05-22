@@ -6,11 +6,17 @@ import 'package:pixel_adventure/screens/achievements_screen.dart';
 import 'package:pixel_adventure/widgets/game_over_widget.dart';
 import 'package:pixel_adventure/widgets/level_complete_widget.dart';
 import 'package:pixel_adventure/widgets/pause_menu_widget.dart';
+import 'package:pixel_adventure/widgets/secret_dialogue_widget.dart';
 
 class GameScreen extends StatefulWidget {
   final int initialLevelIndex;
+  final bool secretRun;
 
-  const GameScreen({super.key, this.initialLevelIndex = 0});
+  const GameScreen({
+    super.key,
+    this.initialLevelIndex = 0,
+    this.secretRun = false,
+  });
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -18,12 +24,18 @@ class GameScreen extends StatefulWidget {
 
 class _GameScreenState extends State<GameScreen> {
   late PixelAdventure _game;
+  late final FocusNode _gameFocusNode;
   Achievement? _newAchievement;
 
   @override
   void initState() {
     super.initState();
-    _game = PixelAdventure(initialLevelIndex: widget.initialLevelIndex);
+    _gameFocusNode = FocusNode(debugLabel: 'PixelAdventureGame');
+    _game = PixelAdventure(
+      initialLevelIndex: widget.initialLevelIndex,
+      secretRun: widget.secretRun,
+      requestGameFocus: _requestGameFocus,
+    );
 
     // Lắng nghe achievement mới unlock trong khi chơi
     AchievementManager.instance.onUnlock = (achievement) {
@@ -40,7 +52,14 @@ class _GameScreenState extends State<GameScreen> {
   @override
   void dispose() {
     AchievementManager.instance.onUnlock = null;
+    _gameFocusNode.dispose();
     super.dispose();
+  }
+
+  void _requestGameFocus() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _gameFocusNode.requestFocus();
+    });
   }
 
   @override
@@ -50,6 +69,8 @@ class _GameScreenState extends State<GameScreen> {
         children: [
           GameWidget(
             game: _game,
+            focusNode: _gameFocusNode,
+            autofocus: true,
             overlayBuilderMap: {
               'PauseMenu': (context, game) =>
                   PauseMenuWidget(game: game as PixelAdventure),
@@ -57,6 +78,8 @@ class _GameScreenState extends State<GameScreen> {
                   GameOverWidget(game: game as PixelAdventure),
               'LevelComplete': (context, game) =>
                   LevelCompleteWidget(game: game as PixelAdventure),
+              'SecretDialogue': (context, game) =>
+                  SecretDialogueWidget(game: game as PixelAdventure),
             },
           ),
           ValueListenableBuilder<double>(

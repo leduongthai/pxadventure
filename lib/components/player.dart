@@ -17,6 +17,7 @@ import 'package:pixel_adventure/components/traps/fire.dart';
 import 'package:pixel_adventure/components/utils.dart';
 import 'package:pixel_adventure/managers/achievement_manager.dart';
 import 'package:pixel_adventure/managers/score_manager.dart';
+import 'package:pixel_adventure/managers/skill_manager.dart';
 import 'package:pixel_adventure/pixel_adventure.dart';
 
 enum PlayerState {
@@ -57,7 +58,7 @@ class Player extends SpriteAnimationGroupComponent
   bool hasJumped = false;
   bool _jumpInputHeld = false;
   int jumpCount = 0;
-  final int maxJumpCount = 2;
+  int get maxJumpCount => 2 + SkillManager.instance.extraJumpLevel;
   bool gotHit = false;
   bool reachedCheckpoint = false;
   bool isDashing = false;
@@ -79,6 +80,7 @@ class Player extends SpriteAnimationGroupComponent
 
   @override
   FutureOr<void> onLoad() {
+    _applySkillUpgrades();
     _loadAllAnimations();
     startingPosition = Vector2(position.x, position.y);
     add(RectangleHitbox(
@@ -134,6 +136,12 @@ class Player extends SpriteAnimationGroupComponent
             event.logicalKey == LogicalKeyboardKey.keyL)) {
       _dash();
     }
+    if (event is KeyDownEvent &&
+        (event.logicalKey == LogicalKeyboardKey.keyE ||
+            event.logicalKey == LogicalKeyboardKey.enter ||
+            event.logicalKey == LogicalKeyboardKey.arrowUp)) {
+      game.tryInteractSecretNpc();
+    }
 
     return super.onKeyEvent(event, keysPressed);
   }
@@ -143,20 +151,22 @@ class Player extends SpriteAnimationGroupComponent
 
     isDashing = true;
     canDash = false;
-    if (game.playSounds) FlameAudio.play('jump.wav', volume: game.soundVolume * 0.5);
+    if (game.playSounds) {
+      FlameAudio.play('jump.wav', volume: game.soundVolume * 0.5);
+    }
 
     // Lưu lại vận tốc y để lướt ngang không bị rơi
-    double oldGravity = velocity.y;
     velocity.y = 0;
 
     // Thời gian lướt
     Future.delayed(Duration(milliseconds: (dashDuration * 1000).toInt()), () {
+      if (!isMounted) return;
       isDashing = false;
-      velocity.y = oldGravity;
     });
 
     // Thời gian hồi chiêu
     Future.delayed(Duration(milliseconds: (dashCooldown * 1000).toInt()), () {
+      if (!isMounted) return;
       canDash = true;
     });
   }
@@ -172,7 +182,10 @@ class Player extends SpriteAnimationGroupComponent
       if (other is Bunny) other.collidedWithPlayer();
       if (other is BlueBird) other.collidedWithPlayer();
       if (other is Mushroom) other.collidedWithPlayer();
-      if (other is Checkpoint) _reachedCheckpoint();
+      if (other is Checkpoint) {
+        final bossGateOpen = !game.secretRun || game.scoreManager.bossKilled;
+        if (bossGateOpen) _reachedCheckpoint();
+      }
     }
     super.onCollisionStart(intersectionPoints, other);
   }
@@ -196,8 +209,15 @@ class Player extends SpriteAnimationGroupComponent
       PlayerState.hit: hitAnimation,
       PlayerState.appearing: appearingAnimation,
       PlayerState.disappearing: disappearingAnimation,
+      PlayerState.dashing: runningAnimation,
     };
     current = PlayerState.idle;
+  }
+
+  void _applySkillUpgrades() {
+    final skills = SkillManager.instance;
+    moveSpeed = 100 * skills.runSpeedMultiplier;
+    dashCooldown = skills.dashCooldownSeconds;
   }
 
   SpriteAnimation _spriteAnimation(String state, int amount) {
@@ -228,14 +248,15 @@ class Player extends SpriteAnimationGroupComponent
     }
 
     if (isDashing) {
-      playerState = PlayerState.running; // Dùng tạm animation chạy hoặc thêm hiệu ứng sau
-    } else {
-      if (velocity.x > 0 || velocity.x < 0) playerState = PlayerState.running;
-      if (velocity.y > 0) playerState = PlayerState.falling;
-      if (velocity.y < 0) {
-        playerState =
-            jumpCount > 1 ? PlayerState.doubleJumping : PlayerState.jumping;
-      }
+      current = PlayerState.dashing;
+      return;
+    }
+
+    if (velocity.x > 0 || velocity.x < 0) playerState = PlayerState.running;
+    if (velocity.y > 0) playerState = PlayerState.falling;
+    if (velocity.y < 0) {
+      playerState =
+          jumpCount > 1 ? PlayerState.doubleJumping : PlayerState.jumping;
     }
     current = playerState;
   }

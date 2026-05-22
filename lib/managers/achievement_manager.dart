@@ -165,4 +165,5 @@ class AchievementManager {
 
   int get unlockedCount => achievements.where((a) => a.unlocked).length;
   int get totalCount => achievements.length;
+  bool get allUnlocked => unlockedCount >= totalCount;
 }

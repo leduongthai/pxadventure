@@ -15,6 +15,50 @@ class LevelCompleteWidget extends StatelessWidget {
     final deaths = ScoreManager.instance.deathCount;
     final stars = ScoreManager.instance.calculateStars();
     final isLastLevel = game.isLastLevel;
+    final skillPoints = game.lastSkillPointsEarned;
+
+    if (game.secretRun) {
+      return Center(
+        child: Container(
+          width: 320,
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            color: const Color(0xFF211F30),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFFFD700), width: 2),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'EXTRA HOÀN THÀNH!',
+                style: TextStyle(
+                  color: Color(0xFFFFD700),
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Điểm: $score',
+                style: const TextStyle(color: Colors.white, fontSize: 18),
+              ),
+              const SizedBox(height: 22),
+              _Btn(
+                label: 'VỀ MENU',
+                color: const Color(0xFF5B4EC8),
+                onTap: () {
+                  game.dismissLevelComplete();
+                  Navigator.of(context)
+                      .pushNamedAndRemoveUntil('/', (r) => false);
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Center(
       child: Container(
@@ -57,6 +101,18 @@ class LevelCompleteWidget extends StatelessWidget {
               style: TextStyle(color: Colors.white54, fontSize: 11),
               textAlign: TextAlign.center,
             ),
+            if (skillPoints > 0) ...[
+              const SizedBox(height: 10),
+              Text(
+                '+$skillPoints điểm kỹ năng mới',
+                style: const TextStyle(
+                  color: Color(0xFF4ECDC4),
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
             const SizedBox(height: 24),
             _Btn(
               label: isLastLevel ? 'VỀ MENU' : 'LEVEL TIẾP',

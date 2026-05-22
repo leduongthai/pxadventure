@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flame/components.dart';
 import 'package:flame_tiled/flame_tiled.dart';
+import 'package:flutter/foundation.dart';
 import 'package:pixel_adventure/components/background_tile.dart';
 import 'package:pixel_adventure/components/checkpoint.dart';
 import 'package:pixel_adventure/components/chicken.dart';
@@ -13,6 +15,7 @@ import 'package:pixel_adventure/components/enemies/mushroom.dart';
 import 'package:pixel_adventure/components/fruit.dart';
 import 'package:pixel_adventure/components/player.dart';
 import 'package:pixel_adventure/components/saw.dart';
+import 'package:pixel_adventure/components/secret_npc.dart';
 import 'package:pixel_adventure/components/traps/falling_platform.dart';
 import 'package:pixel_adventure/components/traps/fire.dart';
 import 'package:pixel_adventure/pixel_adventure.dart';
@@ -24,6 +27,8 @@ class Level extends World with HasGameReference<PixelAdventure> {
   late TiledComponent level;
   List<CollisionBlock> collisionBlocks = [];
   TiledObject? _finishCheckpoint;
+  TiledObject? _secretBossSpawnPoint;
+  bool _secretBossSpawned = false;
 
   @override
   FutureOr<void> onLoad() async {
@@ -45,7 +50,8 @@ class Level extends World with HasGameReference<PixelAdventure> {
         color: backgroundColor ?? 'Gray',
         position: Vector2(0, 0),
       );
-      backgroundTile.size = level.size; // Đặt kích thước background bằng đúng kích thước map
+      backgroundTile.size =
+          level.size; // Đặt kích thước background bằng đúng kích thước map
       add(backgroundTile);
     }
   }
@@ -141,6 +147,17 @@ class Level extends World with HasGameReference<PixelAdventure> {
               offPos: offPos ?? 0,
             ));
             break;
+          case 'NPC':
+            final npc = SecretNpc(
+              position: _adjustGroundedPosition(
+                Vector2(spawnPoint.x, spawnPoint.y),
+                Vector2(spawnPoint.width, spawnPoint.height),
+              ),
+              size: Vector2(spawnPoint.width, spawnPoint.height),
+            );
+            add(npc);
+            if (game.secretRun) game.registerSecretNpc(npc);
+            break;
           case 'Mushroom':
             final offNeg = spawnPoint.properties.getValue('offNeg');
             final offPos = spawnPoint.properties.getValue('offPos');
@@ -156,20 +173,30 @@ class Level extends World with HasGameReference<PixelAdventure> {
             break;
           case 'Boss':
             try {
+              final secretVariant =
+                  spawnPoint.properties.getValue('imageVariant')?.toString();
+              if (game.secretRun && secretVariant == 'secret') {
+                _secretBossSpawnPoint = spawnPoint;
+                break;
+              }
               game.scoreManager.levelHasBoss = true; // Đánh dấu màn này có Boss
               final offNeg = spawnPoint.properties.getValue('offNeg');
               final offPos = spawnPoint.properties.getValue('offPos');
+              final imageVariant =
+                  spawnPoint.properties.getValue('imageVariant')?.toString();
               add(BossPig(
-                position: _adjustSolidPosition(
+                position: _adjustGroundedPosition(
                   Vector2(spawnPoint.x, spawnPoint.y),
                   Vector2(spawnPoint.width, spawnPoint.height),
                 ),
                 size: Vector2(spawnPoint.width, spawnPoint.height),
                 offNeg: offNeg is num ? offNeg.toDouble() : 0.0,
                 offPos: offPos is num ? offPos.toDouble() : 0.0,
+                pattern: _bossPatternFor(spawnPoint),
+                useSecretSprite: imageVariant == 'secret',
               ));
             } catch (e) {
-              print('Error loading Boss: $e');
+              debugPrint('Error loading Boss: $e');
             }
             break;
           case 'FallingPlatform':
@@ -199,6 +226,55 @@ class Level extends World with HasGameReference<PixelAdventure> {
     }
   }
 
+  void summonSecretBoss() {
+    if (_secretBossSpawned || _secretBossSpawnPoint == null) return;
+
+    final spawnPoint = _secretBossSpawnPoint!;
+    _secretBossSpawned = true;
+    game.scoreManager.levelHasBoss = true;
+    final offNeg = spawnPoint.properties.getValue('offNeg');
+    final offPos = spawnPoint.properties.getValue('offPos');
+    final bossSize = Vector2(spawnPoint.width, spawnPoint.height);
+    final bossPosition = _adjustGroundedPosition(
+      Vector2(spawnPoint.x, spawnPoint.y),
+      bossSize,
+    );
+    _movePlayerAwayFromBossSpawn(bossPosition, bossSize);
+
+    add(BossPig(
+      position: bossPosition,
+      size: bossSize,
+      offNeg: offNeg is num ? offNeg.toDouble() : 0.0,
+      offPos: offPos is num ? offPos.toDouble() : 0.0,
+      pattern: _bossPatternFor(spawnPoint),
+      useSecretSprite: true,
+    ));
+  }
+
+  void _movePlayerAwayFromBossSpawn(Vector2 bossPosition, Vector2 bossSize) {
+    final playerBox = Rect.fromLTWH(
+      player.position.x,
+      player.position.y,
+      player.width,
+      player.height,
+    );
+    final dangerBox = Rect.fromLTWH(
+      bossPosition.x - 32,
+      bossPosition.y - 16,
+      bossSize.x + 64,
+      bossSize.y + 32,
+    );
+
+    if (!playerBox.overlaps(dangerBox)) return;
+
+    final safeX = (bossPosition.x - player.width - 48)
+        .clamp(0, level.size.x - player.width)
+        .toDouble();
+    player.position.x = safeX;
+    player.velocity = Vector2.zero();
+    player.horizontalMovement = 0;
+  }
+
   TiledObject? _findFinishCheckpoint(ObjectGroup spawnPointsLayer) {
     final checkpoints = spawnPointsLayer.objects
         .where((spawnPoint) => spawnPoint.class_ == 'Checkpoint')
@@ -206,6 +282,19 @@ class Level extends World with HasGameReference<PixelAdventure> {
     if (checkpoints.isEmpty) return null;
     checkpoints.sort((a, b) => a.x.compareTo(b.x));
     return checkpoints.last;
+  }
+
+  BossPattern _bossPatternFor(TiledObject spawnPoint) {
+    final patternValue =
+        spawnPoint.properties.getValue('pattern')?.toString().toLowerCase();
+
+    if (patternValue == 'stomper' || patternValue == 'leaper') {
+      return BossPattern.stomper;
+    }
+    if (patternValue == 'charger') return BossPattern.charger;
+
+    final currentLevelNumber = game.currentLevelIndex + 1;
+    return currentLevelNumber >= 10 ? BossPattern.stomper : BossPattern.charger;
   }
 
   Vector2 _adjustFruitPosition(
@@ -266,6 +355,35 @@ class Level extends World with HasGameReference<PixelAdventure> {
     }
 
     return adjusted;
+  }
+
+  Vector2 _adjustGroundedPosition(Vector2 position, Vector2 size) {
+    final adjusted = _adjustSolidPosition(position, size);
+    final bottom = adjusted.y + size.y;
+    double? closestGroundTop;
+
+    for (final block in collisionBlocks) {
+      final horizontallyOverlaps =
+          adjusted.x < block.x + block.width && adjusted.x + size.x > block.x;
+      final groundIsBelow = block.y >= bottom - 2 && block.y <= bottom + 56;
+
+      if (horizontallyOverlaps && groundIsBelow) {
+        if (closestGroundTop == null || block.y < closestGroundTop) {
+          closestGroundTop = block.y;
+        }
+      }
+    }
+
+    if (closestGroundTop != null) {
+      adjusted.y = closestGroundTop - size.y;
+    }
+
+    final maxX = (level.size.x - size.x).clamp(0, double.infinity);
+    final maxY = (level.size.y - size.y).clamp(0, double.infinity);
+    adjusted.x = adjusted.x.clamp(0, maxX).toDouble();
+    adjusted.y = adjusted.y.clamp(0, maxY).toDouble();
+
+    return _adjustSolidPosition(adjusted, size);
   }
 
   Vector2 _adjustCheckpointPosition(Vector2 position, Vector2 size) {

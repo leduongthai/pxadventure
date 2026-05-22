@@ -44,7 +44,7 @@ class GameHUD extends PositionComponent with HasGameReference<PixelAdventure> {
   void update(double dt) {
     _scoreText.text = 'Score: ${ScoreManager.instance.currentScore}';
     _deathText.text = '💀 ${ScoreManager.instance.deathCount}';
-    _levelText.text = 'Level: ${game.currentLevelIndex + 1}';
+    _levelText.text = 'Level: ${game.displayedLevelNumber}';
     _fruitText.text =
         '🍎 ${ScoreManager.instance.totalFruitCollected}/${ScoreManager.instance.totalFruitsInLevel}';
     _starText.text = '★ ${ScoreManager.instance.calculateStars()}/3';

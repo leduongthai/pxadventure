@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:pixel_adventure/managers/achievement_manager.dart';
 import 'package:pixel_adventure/managers/save_manager.dart';
+import 'package:pixel_adventure/managers/score_manager.dart';
+import 'package:pixel_adventure/managers/skill_manager.dart';
+import 'package:pixel_adventure/services/progress_unlock_service.dart';
 
 class MainMenuScreen extends StatefulWidget {
   const MainMenuScreen({super.key});
@@ -12,7 +15,12 @@ class MainMenuScreen extends StatefulWidget {
 class _MainMenuScreenState extends State<MainMenuScreen>
     with SingleTickerProviderStateMixin {
   bool _soundEnabled = true;
+  bool _secretUnlocked = false;
+  int _completedLevels = 0;
   String _playerName = 'Player';
+  int _skillPoints = 0;
+  int _titleTapCount = 0;
+  DateTime? _lastTitleTapAt;
   late AnimationController _pulseCtrl;
   late Animation<double> _pulseAnim;
 
@@ -28,6 +36,8 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     _pulseAnim = Tween<double>(begin: 1.0, end: 1.06).animate(
       CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
     );
+    _loadSkillPoints();
+    _loadSecretUnlock();
   }
 
   @override
@@ -47,6 +57,53 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     if (result != null && mounted) {
       setState(() => _playerName = result as String);
     }
+  }
+
+  Future<void> _loadSkillPoints() async {
+    final points = await SkillManager.instance.availablePoints();
+    if (mounted) {
+      setState(() => _skillPoints = points);
+    }
+  }
+
+  Future<void> _loadSecretUnlock() async {
+    final fullStars = await ScoreManager.instance
+        .hasThreeStarsEveryLevel(SaveManager.maxLevels);
+    final completedLevels =
+        await ScoreManager.instance.completedLevelCount(SaveManager.maxLevels);
+    final unlocked = fullStars && AchievementManager.instance.allUnlocked;
+    if (mounted) {
+      setState(() {
+        _completedLevels = completedLevels;
+        _secretUnlocked = unlocked;
+      });
+    }
+  }
+
+  Future<void> _handleTitleTap() async {
+    final now = DateTime.now();
+    if (_lastTitleTapAt == null ||
+        now.difference(_lastTitleTapAt!) > const Duration(seconds: 2)) {
+      _titleTapCount = 0;
+    }
+
+    _lastTitleTapAt = now;
+    _titleTapCount++;
+    if (_titleTapCount < 7) return;
+
+    _titleTapCount = 0;
+    await ProgressUnlockService.unlockAll();
+    await _loadSkillPoints();
+    await _loadSecretUnlock();
+
+    if (!mounted) return;
+    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Đã mở khóa toàn bộ tiến trình test.'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -140,23 +197,27 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                     // Title with pulse
                     ScaleTransition(
                       scale: _pulseAnim,
-                      child: ShaderMask(
-                        shaderCallback: (bounds) => const LinearGradient(
-                          colors: [
-                            Color(0xFF8B7CF8),
-                            Color(0xFFB4A9FF),
-                            Color(0xFF8B7CF8)
-                          ],
-                        ).createShader(bounds),
-                        child: const Text(
-                          'PIXEL\nADVENTURE',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 38,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 4,
-                            height: 1.1,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: _handleTitleTap,
+                        child: ShaderMask(
+                          shaderCallback: (bounds) => const LinearGradient(
+                            colors: [
+                              Color(0xFF8B7CF8),
+                              Color(0xFFB4A9FF),
+                              Color(0xFF8B7CF8)
+                            ],
+                          ).createShader(bounds),
+                          child: const Text(
+                            'PIXEL\nADVENTURE',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 38,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 4,
+                              height: 1.1,
+                            ),
                           ),
                         ),
                       ),
@@ -171,7 +232,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        '${(SaveManager.instance.getUnlockedLevels() - 1).clamp(0, 11)}/11 màn đã hoàn thành',
+                        '$_completedLevels/11 màn đã hoàn thành',
                         style: const TextStyle(
                             color: Colors.white54, fontSize: 12),
                       ),
@@ -179,7 +240,11 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                     const SizedBox(height: 52),
                     _MenuButton(
                       label: '▶  CHƠI NGAY',
-                      onTap: () => Navigator.pushNamed(context, '/levels'),
+                      onTap: () =>
+                          Navigator.pushNamed(context, '/levels').then((_) {
+                        _loadSkillPoints();
+                        _loadSecretUnlock();
+                      }),
                       isPrimary: true,
                     ),
                     const SizedBox(height: 14),
@@ -189,9 +254,25 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                     ),
                     const SizedBox(height: 14),
                     _MenuButton(
+                      label: 'KỸ NĂNG ($_skillPoints)',
+                      onTap: () => Navigator.pushNamed(context, '/skills')
+                          .then((_) => _loadSkillPoints()),
+                    ),
+                    const SizedBox(height: 14),
+                    if (_secretUnlocked) ...[
+                      _MenuButton(
+                        label: 'EXTRA',
+                        onTap: () => Navigator.pushNamed(context, '/secret'),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+                    _MenuButton(
                       label: '🏆  THÀNH TÍCH',
                       onTap: () => Navigator.pushNamed(context, '/achievements')
-                          .then((_) => setState(() {})),
+                          .then((_) {
+                        _loadSecretUnlock();
+                        if (mounted) setState(() {});
+                      }),
                     ),
                     const SizedBox(height: 14),
                     _MenuButton(
