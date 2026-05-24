@@ -2,7 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class DefaultFirebaseOptions {
-  static const _fallbackApiKey = 'AIzaSyAntNQ4XKPxk_7PNpDk_Hmvg_IlEJnAIKM';
+  static const _fallbackApiKey = 'API_Key';
   static const _fallbackAppId = '1:761876867956:web:0e96fa57f0d80cac395a21';
   static const _fallbackMessagingSenderId = '761876867956';
   static const _fallbackProjectId = 'pixel-adventure-20762';
